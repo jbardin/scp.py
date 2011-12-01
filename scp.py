@@ -151,6 +151,7 @@ class SCPClient(object):
                     self._progress(basename, size, file_pos)
             chan.sendall('\x00')
             file_hdl.close()
+            self._recv_confirm()
 
     def _send_recursive(self, files):
         for base in files:
