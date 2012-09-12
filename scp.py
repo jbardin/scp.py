@@ -15,6 +15,8 @@
 # License along with this library; if not, write to the Free Software
 # Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301  USA
 
+# Modification by gregwjacobs@gmail.com - added preserve_perms kwarg for get()
+
 
 """
 Utilities for sending files over ssh using the scp1 protocol.
@@ -22,6 +24,7 @@ Utilities for sending files over ssh using the scp1 protocol.
 
 import os
 from socket import timeout as SocketTimeout
+
 
 class SCPClient(object):
     """
@@ -59,6 +62,8 @@ class SCPClient(object):
         self._recv_dir = ''
         self._utime = None
         self._dirtimes = {}
+        self.preserve_perms = False
+        
 
     def put(self, files, remote_path = '.', 
             recursive = False, preserve_times = False):
@@ -76,6 +81,7 @@ class SCPClient(object):
         @param preserve_times: preserve mtime and atime of transfered files
             and directories.
         @type preserve_times: bool
+        
         """
         self.preserve_times = preserve_times
         self.channel = self.transport.open_session()
@@ -96,7 +102,7 @@ class SCPClient(object):
             self.channel.close()
     
     def get(self, remote_path, local_path = '',
-            recursive = False, preserve_times = False):
+            recursive = False, preserve_times = False, preserve_perms = False):
         """
         Transfer files from remote host to localhost
 
@@ -111,7 +117,11 @@ class SCPClient(object):
         @param preserve_times: preserve mtime and atime of transfered files
             and directories.
         @type preserve_times: bool
+        @parm preserve_perms: preserve chmod perms as files copied
+        @type preserve_perms: bool
+        
         """
+        self.preserve_perms = preserve_perms
         self._recv_dir = local_path or os.getcwd() 
         rcsv = ('', ' -r')[recursive]
         prsv = ('', ' -p')[preserve_times]
@@ -188,6 +198,7 @@ class SCPClient(object):
             msg = self.channel.recv(512)
         except SocketTimeout:
             raise SCPException('Timout waiting for scp response')
+        
         if msg and msg[0] == '\x00':
             return
         elif msg and msg[0] == '\x01':
@@ -274,7 +285,8 @@ class SCPClient(object):
         try:
             os.utime(path, self._utime)
             self._utime = None
-            os.chmod(path, mode)
+            if self.preserve_perms == True:
+                os.chmod(path, mode)
             # should we notify the other end?
         finally:
             file_hdl.close()
@@ -290,9 +302,13 @@ class SCPClient(object):
             raise SCPException('Bad directory format')
         try:
             if not os.path.exists(path):
-                os.mkdir(path, mode)
+                if self.preserve_perms == True:
+                    os.mkdir(path, mode)
+                else:
+                    os.mkdir(path)
             elif os.path.isdir(path):
-                os.chmod(path, mode)
+                if self.preserve_perms == True:
+                    os.chmod(path, mode)
             else:
                 raise SCPException('%s: Not a directory' % path)
             self._dirtimes[path] = (self._utime)
@@ -316,3 +332,5 @@ class SCPClient(object):
 class SCPException(Exception):
     """SCP exception class"""
     pass
+
+
