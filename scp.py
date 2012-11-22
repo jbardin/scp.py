@@ -1,5 +1,8 @@
 # scp.py
 # Copyright (C) 2008 James Bardin <jbardin@bu.edu>
+# Copyright (C) 2012 Martin Ortner <tintinweb@oststrom.com>
+# + Bugfixes - recursive file transfers (fixed folder levels)
+# + Feature  - Support for wildcard filenames
 #
 # This library is free software; you can redistribute it and/or
 # modify it under the terms of the GNU Lesser General Public
@@ -21,6 +24,7 @@ Utilities for sending files over ssh using the scp1 protocol.
 """
 
 import os
+import fnmatch
 from socket import timeout as SocketTimeout
 
 class SCPClient(object):
@@ -59,6 +63,11 @@ class SCPClient(object):
         self._recv_dir = ''
         self._utime = None
         self._dirtimes = {}
+        
+    def __del__(self):
+        if self.channel:
+            self.channel.close()
+        
 
     def put(self, files, remote_path = '.', 
             recursive = False, preserve_times = False):
@@ -87,13 +96,8 @@ class SCPClient(object):
         if not isinstance(files, (list, tuple)):
             files = [files]
         
-        if recursive:
-            self._send_recursive(files)
-        else:
-            self._send_files(files)
+        self._send_files(files,recursive=recursive)
         
-        if self.channel:
-            self.channel.close()
     
     def get(self, remote_path, local_path = '',
             recursive = False, preserve_times = False):
@@ -119,9 +123,7 @@ class SCPClient(object):
         self.channel.settimeout(self.socket_timeout)
         self.channel.exec_command('scp%s%s -f %s' % (rcsv, prsv, remote_path))
         self._recv_all()
-        
-        if self.channel:
-            self.channel.close()
+
 
     def _read_stats(self, name):
         """return just the file stats needed for scp"""
@@ -131,39 +133,114 @@ class SCPClient(object):
         atime = int(stats.st_atime)
         mtime = int(stats.st_mtime)
         return (mode, size, mtime, atime)
-
-    def _send_files(self, files): 
+    
+    def _send_single_files(self,files):
+        if isinstance(files,str):files=[files]
         for name in files:
-            basename = os.path.basename(name)
-            (mode, size, mtime, atime) = self._read_stats(name)
-            if self.preserve_times:
-                self._send_time(mtime, atime)
-            file_hdl = file(name, 'rb')
-            self.channel.sendall('C%s %d %s\n' % (mode, size, basename))
-            self._recv_confirm()
-            file_pos = 0
-            buff_size = self.buff_size
-            chan = self.channel
-            while file_pos < size:
-                chan.sendall(file_hdl.read(buff_size))
-                file_pos = file_hdl.tell()
-                if self._progress:
-                    self._progress(basename, size, file_pos)
-            chan.sendall('\x00')
-            file_hdl.close()
-            self._recv_confirm()
+           basename = os.path.basename(name)
+           (mode, size, mtime, atime) = self._read_stats(name)
+           if self.preserve_times:
+               self._send_time(mtime, atime)
+           file_hdl = file(name, 'rb')
+           self.channel.sendall('C%s %d %s\n' % (mode, size, basename))
+           self._recv_confirm()
+           file_pos = 0
+           buff_size = self.buff_size
+           chan = self.channel
+           if self._progress:
+               self._progress(name, size, 0)        #send 0 progress to detect begin :)
+           while file_pos < size:
+               chan.sendall(file_hdl.read(buff_size))
+               file_pos = file_hdl.tell()
+               if self._progress:
+                   self._progress(name, size, file_pos)
+           chan.sendall('\x00')
+           file_hdl.close()
+        
 
-    def _send_recursive(self, files):
+    def _send_files(self, files,filter=[],recursive=False): 
+        """
+        Send files to remote destination
+            
+        @param files: list of files or paths to be transferred to remote destination (all files are put into the dest. dir!)
+        @type files: either str or list
+        @param filter: list of fnmatch filters (*,*.c,..) empty list = no filtering
+        @type filter: either str or list
+        @param recursive: recurse into subdirs
+        @type recursive: boolean
+        """
+        # for loop for recursive transfers
+        # will only return one dir if recursive = False
+        #handle multiple paths
+        if isinstance(files,str):files=[files]
         for base in files:
-            lastdir = base
-            for root, dirs, fls in os.walk(base):
-                # pop back out to the next dir in the walk
-                while lastdir != os.path.commonprefix([lastdir, root]):
-                    self._send_popd()
-                    lastdir = os.path.split(lastdir)[0]
-                self._send_pushd(root)
-                lastdir = root
-                self._send_files([os.path.join(root, f) for f in fls])
+            if os.path.isfile(base):
+                #is file
+                self._send_single_files(base)               
+            elif os.path.isdir(base):
+                #is pure dir
+                last=base   #save base for get_dir_level_diff
+                for root, fls in self._list_dir(base,filter,recursive=recursive):
+                    # build file-list for transfer, and transfer file by file
+                    pop,push= self.__traverse_dir_instruction(last,root)
+                    last = root
+                    for i in range(pop):
+                        self._send_popd()
+                    for i in range(push):
+                        self._send_pushd(root)
+                    
+                    #actually transfer files
+                    self._send_single_files([os.path.join(root, f) for f in fls])
+            elif not os.path.isfile(base) and not os.path.isdir(base):
+                #wildcarded filename               
+                for root,fls in self._list_dir(os.path.dirname(base),filters=os.path.basename(base),recursive=False):
+                    self._send_single_files([os.path.join(root, f) for f in fls])
+                
+                
+
+              
+    def _list_dir(self,paths,filters=[],recursive=False):
+        ffiles=[]
+        if isinstance(filters,str):filters=[filters]  
+        if isinstance(paths,str):paths=[paths]    
+        
+        for root in paths:
+            for root,dirs,files in os.walk(root,topdown=True):
+                if len(filters)>0:
+                    ffiles=[]
+                    for f in filters:
+                        ffiles+= fnmatch.filter(files,f)   #join with prev. files  
+                    #return root dir + unique files
+                    files=ffiles    #filtered files
+                yield root,set(files) 
+                if not recursive: break 
+             
+             
+    def __normalize_path(self,p):
+        p = os.path.normpath(p) # normalize /x/../A/./../b/ to /b/
+        p=p.replace("\\","/")   # normalize path to unix path
+        return p 
+                  
+    def __traverse_dir_instruction(self,a,b):
+        '''
+        Calculate the number of POPs and PUSHs to get from dir a to dir b
+        Returns (pops,pushs)
+        '''
+        a=self.__normalize_path(a)
+        b=self.__normalize_path(b)
+        if a[-1]=="/": a=a[:-1] # kill trailing / (to avoid extra pushes/pops)
+        if b[-1]=="/": b=b[:-1]
+        last = a.split("/")      # listify
+        current = b.split("/")
+        #compare last to current
+        pos=0
+        for e in last:
+            if pos>=len(current) or e!=current[pos]: break
+            pos +=1 
+        #calc_pops / pushes from last_dir to current dir
+        num_pops= len(last)-pos
+        num_pushs= len(current)-pos
+        return num_pops,num_pushs
         
     def _send_pushd(self, directory):
         (mode, size, mtime, atime) = self._read_stats(directory)
