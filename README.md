@@ -11,35 +11,32 @@ Changes
 Usage
 ======
 
-<code>
-class MYSSHClient(paramiko.SSHClient):
 
-    def open_scp(self,socket_timeout =None, progress = None):
-        """
-        Open SCP Connection
-        progress = callback function (name,size,sent)
-        socket_timeout = timeout float
-        """
-        t = self.get_transport()
-        c = SCPClient(t,socket_timeout = socket_timeout, progress = progress)
-        return c
-
-
-if __name__=="__main__":
-    numfile=0
-    def progress( filename, size, bytessent):
-        global numfile
-        if bytessent == 0:
-          numfile+=1
-          print numfile,size,filename
-        
-    sshc = MYSSHClient()
-    sshc.set_ignore_missing_host_key_warning()
-    sshc.connect('10.0.0.1', username='username', password='password')  
-    scp = sshc.open_scp(progress=progress)
-    #scp.get("/etc/bla-*",".")
-    scp.put("c:\\_tmp\\skipfish\\skipfish\\n*.png",remote_path="/var/tmp/",recursive=False,)    #do not recurse dirs
-    #scp.put("c:\\_tmp\\skipfish\\skipfish\\",remote_path="/var/tmp/",recursive=False,)
-    print numfile
-    print "done"
-<code>
+    class MYSSHClient(paramiko.SSHClient):    
+        def open_scp(self,socket_timeout =None, progress = None):
+            """
+            Open SCP Connection
+            progress = callback function (name,size,sent)
+            socket_timeout = timeout float
+            """
+            t = self.get_transport()
+            c = SCPClient(t,socket_timeout = socket_timeout, progress = progress)
+            return c
+    
+    if __name__=="__main__":
+        numfile=0
+        def progress( filename, size, bytessent):
+            global numfile
+            if bytessent == 0:
+              numfile+=1
+              print numfile,size,filename
+            
+        sshc = MYSSHClient()
+        sshc.set_ignore_missing_host_key_warning()
+        sshc.connect('10.0.0.1', username='username', password='password')  
+        scp = sshc.open_scp(progress=progress)
+        #scp.get("/etc/bla-*",".")
+        scp.put("c:\\_tmp\\test\\test\\n*.png",remote_path="/var/tmp/",recursive=False,)    #do not recurse dirs
+        #scp.put("c:\\_tmp\\test\\test\\",remote_path="/var/tmp/",recursive=False,)
+        print numfile
+        print "done"
