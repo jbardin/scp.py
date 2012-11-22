@@ -11,6 +11,7 @@ Changes
 Usage
 ======
 
+<code>
 class MYSSHClient(paramiko.SSHClient):
 
     def open_scp(self,socket_timeout =None, progress = None):
@@ -41,3 +42,4 @@ if __name__=="__main__":
     #scp.put("c:\\_tmp\\skipfish\\skipfish\\",remote_path="/var/tmp/",recursive=False,)
     print numfile
     print "done"
+<code>
