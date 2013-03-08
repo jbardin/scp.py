@@ -23,6 +23,8 @@ Utilities for sending files over ssh using the scp1 protocol.
 import os
 from socket import timeout as SocketTimeout
 
+DEBUG = False
+
 
 class SCPClient(object):
     """
@@ -145,6 +147,8 @@ class SCPClient(object):
             self.channel.sendall('C%s %d %s\n' % (mode, size, basename))
             self._recv_confirm()
             file_pos = 0
+            if self._progress:
+                self._progress(basename, size, 0)
             buff_size = self.buff_size
             chan = self.channel
             while file_pos < size:
@@ -156,17 +160,36 @@ class SCPClient(object):
             file_hdl.close()
             self._recv_confirm()
 
+    def _chdir(self, from_dir, to_dir):
+        # Pop until we're one level up from our next push.
+        # Push *once* into to_dir.
+        # This is dependent on the depth-first traversal from os.walk
+
+        # add path.sep to each when checking the prefix, so we can use
+        # path.dirname after
+        common = os.path.commonprefix([from_dir + os.path.sep,
+                                       to_dir + os.path.sep])
+        # now take the dirname, since commonprefix is character based,
+        # and we either have a seperator, or a partial name
+        common = os.path.dirname(common)
+        cur_dir = from_dir.rstrip(os.path.sep)
+        while cur_dir != common:
+            cur_dir = os.path.split(cur_dir)[0]
+            self._send_popd()
+        # now we're in our common base directory, so on
+        self._send_pushd(to_dir)
+
     def _send_recursive(self, files):
         for base in files:
-            lastdir = base
+            if not os.path.isdir(base):
+                # filename mixed into the bunch
+                self._send_files([base])
+                continue
+            last_dir = base
             for root, dirs, fls in os.walk(base):
-                # pop back out to the next dir in the walk
-                while lastdir != os.path.commonprefix([lastdir, root]):
-                    self._send_popd()
-                    lastdir = os.path.split(lastdir)[0]
-                self._send_pushd(root)
-                lastdir = root
+                self._chdir(last_dir, root)
                 self._send_files([os.path.join(root, f) for f in fls])
+                last_dir = root
 
     def _send_pushd(self, directory):
         (mode, size, mtime, atime) = self._read_stats(directory)
