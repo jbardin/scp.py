@@ -11,6 +11,7 @@ and has only been tested with this implementation.
 
 ```python
 from paramiko import SSHClient
+#OR USE "from paramiko.client import SSHClient"
 from scp import SCPClient
 
 ssh = SSHCLient()
