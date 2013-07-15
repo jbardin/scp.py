@@ -13,14 +13,14 @@ and has only been tested with this implementation.
 from paramiko import SSHClient
 from scp import SCPClient
 
-ssh = SSHCLient()
+ssh = SSHClient()
 ssh.load_system_host_keys()
 ssh.connect('example.com')
 
 # SCPCLient takes a paramiko transport as its only argument
 scp = SCPClient(ssh.get_transport())
 
-scp.put('test.txt', 'test2.txt)
+scp.put('test.txt', 'test2.txt')
 scp.get('test2.txt')
 ```
     $ md5sum test.xt test2.txt
