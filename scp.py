@@ -72,7 +72,7 @@ class SCPClient(object):
         self.channel = self.transport.open_session()
         self.channel.settimeout(self.socket_timeout)
         scp_command = ('scp -t %s', 'scp -r -t %s')[recursive]
-        self.channel.exec_command(scp_command % remote_path)
+        self.channel.exec_command(scp_command % _sh_quote(remote_path))
         self._recv_confirm()
 
         if not isinstance(files, (list, tuple)):
@@ -131,8 +131,12 @@ class SCPClient(object):
             if self.preserve_times:
                 self._send_time(mtime, atime)
             file_hdl = file(name, 'rb')
+
+            # The protocol can't handle \n in the filename.
+            # Quote them as the control sequence \^J for now,
+            # which is how openssh handles it.
             self.channel.sendall("C%s %d %s\n" %
-                                 (mode, size, _sh_quote(basename)))
+                                 (mode, size, basename.replace('\n', '\\^J')))
             self._recv_confirm()
             file_pos = 0
             if self._progress:
@@ -184,7 +188,8 @@ class SCPClient(object):
         basename = os.path.basename(directory)
         if self.preserve_times:
             self._send_time(mtime, atime)
-        self.channel.sendall('D%s 0 %s\n' % (mode, basename))
+        self.channel.sendall('D%s 0 %s\n' %
+                             (mode, basename.replace('\n', '\\^J')))
         self._recv_confirm()
 
     def _send_popd(self):
@@ -339,7 +344,7 @@ _find_unsafe = re.compile(r'[^\w@%+=:,./-]').search
 def _sh_quote(s):
     """Return a shell-escaped version of the string *s*."""
     if not s:
-        return "''"
+        return ""
     if _find_unsafe(s) is None:
         return s
 
