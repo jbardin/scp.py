@@ -48,6 +48,7 @@ class SCPClient(object):
         self.preserve_times = False
         self._progress = progress
         self._recv_dir = ''
+        self._rename = False
         self._utime = None
         self._dirtimes = {}
 
@@ -105,13 +106,22 @@ class SCPClient(object):
         """
         if not isinstance(remote_path, (list, tuple)):
             remote_path = [remote_path]
-        remote_path = ' '.join([_sh_quote(r) for r in remote_path])
+        remote_path = [_sh_quote(r) for r in remote_path]
         self._recv_dir = local_path or os.getcwd()
+        self._rename = len(remote_path) == 1 and not os.path.isdir(local_path)
+        if len(remote_path) > 1:
+            if not os.path.exists(self._recv_dir):
+                msg = "Local path '%s' does not exist" % self._recv_dir
+                raise SCPException(msg)
+            elif not os.path.isdir(self._recv_dir):
+                msg = "Local path '%s' is not a directory" % self._recv_dir
+                raise SCPException(msg)
         rcsv = ('', ' -r')[recursive]
         prsv = ('', ' -p')[preserve_times]
         self.channel = self.transport.open_session()
         self.channel.settimeout(self.socket_timeout)
-        self.channel.exec_command("scp%s%s -f %s" % (rcsv, prsv, remote_path))
+        self.channel.exec_command("scp%s%s -f %s" % (rcsv, prsv,
+                                                     ' '.join(remote_path)))
         self._recv_all()
 
         if self.channel:
@@ -244,7 +254,7 @@ class SCPClient(object):
             try:
                 command[code](msg[1:])
             except KeyError:
-                raise SCPException(repr(msg))
+                raise SCPException(str(msg).strip())
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
 
@@ -266,6 +276,9 @@ class SCPClient(object):
             mode = int(parts[0], 8)
             size = int(parts[1])
             path = os.path.join(self._recv_dir, parts[2])
+            if self._rename:
+                path = self._recv_dir
+                self._rename = False
         except:
             chan.send('\x01')
             chan.close()
@@ -319,6 +332,9 @@ class SCPClient(object):
         try:
             mode = int(parts[0], 8)
             path = os.path.join(self._recv_dir, parts[2])
+            if self._rename:
+                path = self._recv_dir
+                self._rename = False
         except:
             self.channel.send('\x01')
             raise SCPException('Bad directory format')
