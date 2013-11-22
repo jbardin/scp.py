@@ -182,6 +182,9 @@ class SCPClient(object):
                 self._chdir(last_dir, root)
                 self._send_files([os.path.join(root, f) for f in fls])
                 last_dir = root
+            # back out of the directory
+            for i in range(len(os.path.split(last_dir))):
+                self._send_popd()
 
     def _send_pushd(self, directory):
         (mode, size, mtime, atime) = self._read_stats(directory)
