@@ -140,7 +140,11 @@ class SCPClient(object):
             self._recv_confirm()
             file_pos = 0
             if self._progress:
-                self._progress(basename, size, 0)
+                if size == 0:
+                    # avoid divide-by-zero
+                    self._progress(basename, 1, 1)
+                else:
+                    self._progress(basename, size, 0)
             buff_size = self.buff_size
             chan = self.channel
             while file_pos < size:
@@ -269,6 +273,12 @@ class SCPClient(object):
             chan.close()
             raise
 
+        if self._progress:
+            if size == 0:
+                # avoid divide-by-zero
+                self._progress(path, 1, 1)
+            else:
+                self._progress(path, size, 0)
         buff_size = self.buff_size
         pos = 0
         chan.send('\x00')
