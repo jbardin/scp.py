@@ -103,13 +103,15 @@ class SCPClient(object):
             and directories.
         @type preserve_times: bool
         """
+        if not isinstance(remote_path, (list, tuple)):
+            remote_path = [remote_path]
+        remote_path = ' '.join([_sh_quote(r) for r in remote_path])
         self._recv_dir = local_path or os.getcwd()
         rcsv = ('', ' -r')[recursive]
         prsv = ('', ' -p')[preserve_times]
         self.channel = self.transport.open_session()
         self.channel.settimeout(self.socket_timeout)
-        self.channel.exec_command("scp%s%s -f %s" %
-                                  (rcsv, prsv, _sh_quote(remote_path)))
+        self.channel.exec_command("scp%s%s -f %s" % (rcsv, prsv, remote_path))
         self._recv_all()
 
         if self.channel:
