@@ -5,7 +5,7 @@ from setuptools import setup
 
 setup(
         name = 'scp',
-        version = '0.6.2',
+        version = '0.7.0',
         author = 'James Bardin',
         author_email = 'j.bardin@gmail.com',
         license = 'LGPL',
