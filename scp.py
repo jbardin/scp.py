@@ -369,7 +369,7 @@ class SCPException(Exception):
 
 
 # this is quote from the shlex module, added in py3.3
-_find_unsafe = re.compile(r'[^\w@%+=:,./-~]').search
+_find_unsafe = re.compile(r'[^\w@%+=:,./~-]').search
 
 
 def _sh_quote(s):
