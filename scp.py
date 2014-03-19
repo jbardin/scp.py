@@ -286,7 +286,7 @@ class SCPClient(object):
 
         try:
             file_hdl = file(path, 'wb')
-        except IOError, e:
+        except IOError as e:
             chan.send('\x01' + str(e))
             chan.close()
             raise
