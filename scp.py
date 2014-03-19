@@ -348,7 +348,7 @@ class SCPClient(object):
             self._dirtimes[path] = (self._utime)
             self._utime = None
             self._recv_dir = path
-        except (OSError, SCPException), e:
+        except (OSError, SCPException) as e:
             self.channel.send('\x01' + str(e))
             raise
 
