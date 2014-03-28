@@ -226,9 +226,9 @@ class SCPClient(object):
             msg = self.channel.recv(512)
         except SocketTimeout:
             raise SCPException('Timout waiting for scp response')
-        if msg and msg[0] == '\x00':
+        if msg and msg[0] == b'\x00':
             return
-        elif msg and msg[0] == '\x01':
+        elif msg and msg[0] == b'\x01':
             raise SCPException(msg[1:])
         elif self.channel.recv_stderr_ready():
             msg = self.channel.recv_stderr(512)
@@ -236,7 +236,7 @@ class SCPClient(object):
         elif not msg:
             raise SCPException('No response from server')
         else:
-            raise SCPException('Invalid response from server: ' + msg)
+            raise SCPException('Invalid response from server', msg)
 
     def _recv_all(self):
         # loop over scp commands, and recive as necessary
