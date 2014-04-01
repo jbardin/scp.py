@@ -11,6 +11,21 @@ from socket import timeout as SocketTimeout
 
 DEBUG = False
 
+# this is quote from the shlex module, added in py3.3
+_find_unsafe = re.compile(r'[^\w@%+=:,./~-]').search
+
+
+def _sh_quote(s):
+    """Return a shell-escaped version of the string *s*."""
+    if not s:
+        return ""
+    if _find_unsafe(s) is None:
+        return s
+
+    # use single quotes, and put single quotes into double quotes
+    # the string $'b is then quoted as '$'"'"'b'
+    return "'" + s.replace("'", "'\"'\"'") + "'"
+
 
 class SCPClient(object):
     """
@@ -27,7 +42,7 @@ class SCPClient(object):
     (matching scp behaviour), but we make no attempt at symlinked directories.
     """
     def __init__(self, transport, buff_size=16384, socket_timeout=5.0,
-                 progress=None):
+                 progress=None, sanitize=_sh_quote):
         """
         Create an scp1 client.
 
@@ -39,6 +54,8 @@ class SCPClient(object):
         @type socket_timeout: float
         @param progress: callback - called with (filename, size, sent) during
             transfers
+        @param sanitize: function - called with filename, should return
+            safe or escaped string.  Uses _sh_quote by default.
         @type progress: function(string, int, int)
         """
         self.transport = transport
@@ -50,6 +67,7 @@ class SCPClient(object):
         self._recv_dir = ''
         self._rename = False
         self._utime = None
+        self.sanitize = sanitize
         self._dirtimes = {}
 
     def put(self, files, remote_path='.',
@@ -73,7 +91,7 @@ class SCPClient(object):
         self.channel = self.transport.open_session()
         self.channel.settimeout(self.socket_timeout)
         scp_command = ('scp -t %s', 'scp -r -t %s')[recursive]
-        self.channel.exec_command(scp_command % _sh_quote(remote_path))
+        self.channel.exec_command(scp_command % self.sanitize(remote_path))
         self._recv_confirm()
 
         if not isinstance(files, (list, tuple)):
@@ -106,7 +124,7 @@ class SCPClient(object):
         """
         if not isinstance(remote_path, (list, tuple)):
             remote_path = [remote_path]
-        remote_path = [_sh_quote(r) for r in remote_path]
+        remote_path = [self.sanitize(r) for r in remote_path]
         self._recv_dir = local_path or os.getcwd()
         self._rename = len(remote_path) == 1 and not os.path.isdir(local_path)
         if len(remote_path) > 1:
@@ -366,19 +384,3 @@ class SCPClient(object):
 class SCPException(Exception):
     """SCP exception class"""
     pass
-
-
-# this is quote from the shlex module, added in py3.3
-_find_unsafe = re.compile(r'[^\w@%+=:,./~-]').search
-
-
-def _sh_quote(s):
-    """Return a shell-escaped version of the string *s*."""
-    if not s:
-        return ""
-    if _find_unsafe(s) is None:
-        return s
-
-    # use single quotes, and put single quotes into double quotes
-    # the string $'b is then quoted as '$'"'"'b'
-    return "'" + s.replace("'", "'\"'\"'") + "'"
