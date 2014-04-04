@@ -1,5 +1,5 @@
 # scp.py
-# Copyright (C) 2008 James Bardin <jbardin@bu.edu>
+# Copyright (C) 2008 James Bardin <j.bardin@gmail.com>
 
 """
 Utilities for sending files over ssh using the scp1 protocol.
@@ -282,7 +282,7 @@ class SCPClient(object):
             mtime = int(times[0])
             atime = int(times[2]) or mtime
         except:
-            self.channel.send('\x01')
+            self.channel.send(b'\x01')
             raise SCPException('Bad time format')
         # save for later
         self._utime = (atime, mtime)
@@ -305,7 +305,7 @@ class SCPClient(object):
         try:
             file_hdl = file(path, 'wb')
         except IOError as e:
-            chan.send('\x01' + str(e))
+            chan.send(b'\x01' + str(e).encode())
             chan.close()
             raise
 
@@ -317,7 +317,7 @@ class SCPClient(object):
                 self._progress(path, size, 0)
         buff_size = self.buff_size
         pos = 0
-        chan.send('\x00')
+        chan.send(b'\x00')
         try:
             while pos < size:
                 # we have to make sure we don't read the final byte
@@ -329,7 +329,7 @@ class SCPClient(object):
                     self._progress(path, size, pos)
 
             msg = chan.recv(512)
-            if msg and msg[0] != '\x00':
+            if msg and msg[0] != b'\x00':
                 raise SCPException(msg[1:])
         except SocketTimeout:
             chan.close()
@@ -354,7 +354,7 @@ class SCPClient(object):
                 path = self._recv_dir
                 self._rename = False
         except:
-            self.channel.send('\x01')
+            self.channel.send(b'\x01')
             raise SCPException('Bad directory format')
         try:
             if not os.path.exists(path):
@@ -367,7 +367,7 @@ class SCPClient(object):
             self._utime = None
             self._recv_dir = path
         except (OSError, SCPException) as e:
-            self.channel.send('\x01' + str(e))
+            self.channel.send(b'\x01' + str(e).encode()))
             raise
 
     def _recv_popd(self, *cmd):
