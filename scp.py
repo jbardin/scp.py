@@ -244,9 +244,10 @@ class SCPClient(object):
             msg = self.channel.recv(512)
         except SocketTimeout:
             raise SCPException('Timout waiting for scp response')
-        if msg and msg[0] == 0:
+        # slice off the first byte, so this compare will work in python2 and python3
+        if msg and msg[0:1] == b'\x00':
             return
-        elif msg and msg[0] == 1:
+        elif msg and msg[0:1] == b'\x01':
             raise SCPException(msg[1:])
         elif self.channel.recv_stderr_ready():
             msg = self.channel.recv_stderr(512)
@@ -258,17 +259,17 @@ class SCPClient(object):
 
     def _recv_all(self):
         # loop over scp commands, and recive as necessary
-        command = {'C': self._recv_file,
-                   'T': self._set_time,
-                   'D': self._recv_pushd,
-                   'E': self._recv_popd}
+        command = {b'C': self._recv_file,
+                   b'T': self._set_time,
+                   b'D': self._recv_pushd,
+                   b'E': self._recv_popd}
         while not self.channel.closed:
             # wait for command as long as we're open
             self.channel.sendall('\x00')
             msg = self.channel.recv(1024)
             if not msg:  # chan closed while recving
                 break
-            code = msg[0]
+            code = msg[0:1]
             try:
                 command[code](msg[1:])
             except KeyError:
@@ -329,7 +330,7 @@ class SCPClient(object):
                     self._progress(path, size, pos)
 
             msg = chan.recv(512)
-            if msg and msg[0] != b'\x00':
+            if msg and msg[0:1] != b'\x00':
                 raise SCPException(msg[1:])
         except SocketTimeout:
             chan.close()
