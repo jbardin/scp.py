@@ -160,7 +160,7 @@ class SCPClient(object):
             (mode, size, mtime, atime) = self._read_stats(name)
             if self.preserve_times:
                 self._send_time(mtime, atime)
-            file_hdl = file(name, 'rb')
+            file_hdl = open(name, 'rb')
 
             # The protocol can't handle \n in the filename.
             # Quote them as the control sequence \^J for now,
@@ -244,9 +244,9 @@ class SCPClient(object):
             msg = self.channel.recv(512)
         except SocketTimeout:
             raise SCPException('Timout waiting for scp response')
-        if msg and msg[0] == b'\x00':
+        if msg and msg[0] == 0:
             return
-        elif msg and msg[0] == b'\x01':
+        elif msg and msg[0] == 1:
             raise SCPException(msg[1:])
         elif self.channel.recv_stderr_ready():
             msg = self.channel.recv_stderr(512)
@@ -303,7 +303,7 @@ class SCPClient(object):
             raise SCPException('Bad file format')
 
         try:
-            file_hdl = file(path, 'wb')
+            file_hdl = open(path, 'wb')
         except IOError as e:
             chan.send(b'\x01' + str(e).encode())
             chan.close()
@@ -367,7 +367,7 @@ class SCPClient(object):
             self._utime = None
             self._recv_dir = path
         except (OSError, SCPException) as e:
-            self.channel.send(b'\x01' + str(e).encode()))
+            self.channel.send(b'\x01' + str(e).encode())
             raise
 
     def _recv_popd(self, *cmd):
