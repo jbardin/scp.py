@@ -244,9 +244,9 @@ class SCPClient(object):
             msg = self.channel.recv(512)
         except SocketTimeout:
             raise SCPException('Timout waiting for scp response')
-        if msg and msg[0] == b'\x00':
+        if msg and msg[0] == 0:
             return
-        elif msg and msg[0] == b'\x01':
+        elif msg and msg[0] == 1:
             raise SCPException(msg[1:])
         elif self.channel.recv_stderr_ready():
             msg = self.channel.recv_stderr(512)
