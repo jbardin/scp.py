@@ -271,22 +271,32 @@ class SCPClient(object):
             raise SCPException('Invalid response from server', msg)
 
     def _recv_all(self):
-        # loop over scp commands, and recive as necessary
+        """
+        Process received commands.
+        """
         command = {b'C': self._recv_file,
                    b'T': self._set_time,
                    b'D': self._recv_pushd,
                    b'E': self._recv_popd}
-        while not self.channel.closed:
-            # wait for command as long as we're open
-            self.channel.sendall('\x00')
+
+        while True:
+            # Read next command
             msg = self.channel.recv(1024)
-            if not msg:  # chan closed while recving
+            if not msg:
                 break
+
             code = msg[0:1]
+
             try:
                 command[code](msg[1:])
             except KeyError:
                 raise SCPException(str(msg).strip())
+
+            # Confirm command end.
+            if not self.channel.closed:
+                self.channel.sendall('\x00')
+
+
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
 
