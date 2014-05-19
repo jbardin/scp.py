@@ -175,11 +175,14 @@ class SCPClient(object):
                 self._send_time(mtime, atime)
             file_hdl = open(name, 'rb')
 
+            send_name = basename
+            if os.name == 'nt':
+                send_name = send_name.encode('utf-8')
             # The protocol can't handle \n in the filename.
             # Quote them as the control sequence \^J for now,
             # which is how openssh handles it.
-            self.channel.sendall("C%s %d %s\n" %
-                                 (mode, size, basename.replace('\n', '\\^J')))
+            send_name = send_name.replace('\n', '\\^J')
+            self.channel.sendall("C%s %d %s\n" % (mode, size, send_name))
             self._recv_confirm()
             file_pos = 0
             if self._progress:
@@ -326,7 +329,10 @@ class SCPClient(object):
         try:
             mode = int(parts[0], 8)
             size = int(parts[1])
-            path = os.path.join(self._recv_dir, parts[2])
+            path = parts[2]
+            if os.name == 'nt':
+                path = path.decode('utf-8')
+            path = os.path.join(self._recv_dir, path)
             if self._rename:
                 path = self._recv_dir
                 self._rename = False
