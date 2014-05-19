@@ -303,6 +303,15 @@ class SCPClient(object):
 
     def _recv_file(self, cmd):
         chan = self.channel
+
+        # Command might already contain data from the file.
+        # Command end with a new line then data follows.
+        parts = cmd.split('\n', 1)
+        cmd = parts[0]
+        already_received = ''
+        if len(parts) > 1:
+            already_received = parts[1]
+
         parts = cmd.strip().split(' ', 2)
         try:
             mode = int(parts[0], 8)
@@ -332,17 +341,39 @@ class SCPClient(object):
         buff_size = self.buff_size
         pos = 0
         chan.send(b'\x00')
+
+        # Write data which was already received buffer.
+        if already_received:
+            data = already_received[:size]
+            already_received = already_received[size:]
+            file_hdl.write(data)
+            pos = file_hdl.tell()
+
         try:
             while pos < size:
                 # we have to make sure we don't read the final byte
                 if size - pos <= buff_size:
                     buff_size = size - pos
-                file_hdl.write(chan.recv(buff_size))
+                data = chan.recv(buff_size)
+
+                # Channel return empty string when no more data can be
+                # received (ex channel close, eof received)
+                if len(data) == 0:
+                    pos = size
+
+                file_hdl.write(data)
                 pos = file_hdl.tell()
+
                 if self._progress:
                     self._progress(path, size, pos)
 
+            # Check final response code.
             msg = chan.recv(512)
+            if already_received:
+                # We might already have received the status in the initial
+                # read. Ex for small files.
+                msg = already_received + msg
+
             if msg and msg[0:1] != b'\x00':
                 raise SCPException(msg[1:])
         except SocketTimeout:
