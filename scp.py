@@ -138,8 +138,21 @@ class SCPClient(object):
         prsv = ('', ' -p')[preserve_times]
         self.channel = self.transport.open_session()
         self.channel.settimeout(self.socket_timeout)
-        self.channel.exec_command("scp%s%s -f %s" % (rcsv, prsv,
-                                                     ' '.join(remote_path)))
+
+        try:
+            self.channel.exec_command(
+                "scp%s%s -f %s" % (rcsv, prsv, ' '.join(remote_path)))
+            self._recv_all()
+        except:
+            # Check to see if we have some data on the channel.
+            data = self.channel.recv(self.buff_size)
+            if not data:
+                raise
+
+            code = data[0]
+            message = data[1:]
+            raise SCPException('%s %s' % (code, message))
+
         self._recv_all()
 
         if self.channel:
