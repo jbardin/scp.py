@@ -126,7 +126,8 @@ class SCPClient(object):
             remote_path = [remote_path]
         remote_path = [self.sanitize(r) for r in remote_path]
         self._recv_dir = local_path or os.getcwd()
-        self._rename = len(remote_path) == 1 and not os.path.isdir(local_path)
+        self._rename = (len(remote_path) == 1 and
+                        not os.path.isdir(os.path.abspath(local_path)))
         if len(remote_path) > 1:
             if not os.path.exists(self._recv_dir):
                 msg = "Local path '%s' does not exist" % self._recv_dir
