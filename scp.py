@@ -291,7 +291,8 @@ class SCPClient(object):
 
     def _recv_file(self, cmd):
         chan = self.channel
-        parts = cmd.strip().split(' ', 2)
+        parts = cmd.decode().strip().split(' ', 2)
+
         try:
             mode = int(parts[0], 8)
             size = int(parts[1])
