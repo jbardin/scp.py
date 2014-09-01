@@ -348,10 +348,10 @@ class SCPClient(object):
         # '\x00' confirmation sent in _recv_all
 
     def _recv_pushd(self, cmd):
-        parts = cmd.split()
+        parts = cmd.split(' ', 2)
         try:
             mode = int(parts[0], 8)
-            path = os.path.join(self._recv_dir, parts[2])
+            path = os.path.join(self._recv_dir, parts[2].strip())
             if self._rename:
                 path = self._recv_dir
                 self._rename = False
