@@ -1,0 +1,100 @@
+man(1)                                                                  man(1)
+
+
+
+NNAAMMEE
+       man - format and display the on-line manual pages
+
+SSYYNNOOPPSSIISS
+       mmaann  [--aaccddffFFhhkkKKttwwWW]  [----ppaatthh]  [--mm _s_y_s_t_e_m] [--pp _s_t_r_i_n_g] [--CC _c_o_n_f_i_g___f_i_l_e]
+       [--MM _p_a_t_h_l_i_s_t] [--PP _p_a_g_e_r] [--BB _b_r_o_w_s_e_r] [--HH _h_t_m_l_p_a_g_e_r] [--SS  _s_e_c_t_i_o_n___l_i_s_t]
+       [_s_e_c_t_i_o_n] _n_a_m_e _._._.
+
+
+DDEESSCCRRIIPPTTIIOONN
+       mmaann formats and displays the on-line manual pages.  If you specify _s_e_c_-
+       _t_i_o_n, mmaann only looks in that section of the manual.  _n_a_m_e  is  normally
+       the  name of the manual page, which is typically the name of a command,
+       function, or file.  However, if _n_a_m_e contains  a  slash  (//)  then  mmaann
+       interprets  it  as a file specification, so that you can do mmaann ..//ffoooo..55
+       or even mmaann //ccdd//ffoooo//bbaarr..11..ggzz.
+
+       See below for a description of where mmaann  looks  for  the  manual  page
+       files.
+
+
+OOPPTTIIOONNSS
+       --CC  ccoonnffiigg__ffiillee
+              Specify  the  configuration  file  to  use; the default is //pprrii--
+              vvaattee//eettcc//mmaann..ccoonnff.  (See mmaann..ccoonnff(5).)
+
+       --MM  ppaatthh
+              Specify the list of directories to search for man pages.   Sepa-
+              rate  the directories with colons.  An empty list is the same as
+              not specifying --MM at all.  See SSEEAARRCCHH PPAATTHH FFOORR MMAANNUUAALL PPAAGGEESS.
+
+       --PP  ppaaggeerr
+              Specify which pager to use.  This option overrides the  MMAANNPPAAGGEERR
+              environment  variable,  which  in turn overrides the PPAAGGEERR vari-
+              able.  By default, mmaann uses //uussrr//bbiinn//lleessss --iiss.
+
+       --BB     Specify which browser to use on HTML files.  This  option  over-
+              rides  the  BBRROOWWSSEERR  environment  variable. By default, mmaann uses
+              //uussrr//bbiinn//lleessss-is,,
+
+       --HH     Specify a command that renders HTML files as text.  This  option
+              overrides  the  HHTTMMLLPPAAGGEERR  environment variable. By default, mmaann
+              uses //bbiinn//ccaatt,
+
+       --SS  sseeccttiioonn__lliisstt
+              List is a colon separated list of  manual  sections  to  search.
+              This option overrides the MMAANNSSEECCTT environment variable.
+
+       --aa     By default, mmaann will exit after displaying the first manual page
+              it finds.  Using this option forces mmaann to display all the  man-
+              ual pages that match nnaammee,, not just the first.
+
+       --cc     Reformat  the  source man page, even when an up-to-date cat page
+              exists.  This can be meaningful if the cat  page  was  formatted
+              for  a screen with a different number of columns, or if the pre-
+              formatted page is corrupted.
+
+       --dd     Don't actually display the man  pages,  but  do  print  gobs  of
+              debugging information.
+
+       --DD     Both display and print debugging info.
+
+       --ff     Equivalent to wwhhaattiiss.
+
+       --FF or ----pprreeffoorrmmaatt
+              Format only - do not display.
+
+       --hh     Print a help message and exit.
+
+       --kk     Equivalent to aapprrooppooss.
+
+       --KK     Search  for  the  specified  string in *all* man pages. Warning:
+              this is probably very slow!  It  helps  to  specify  a  section.
+              (Just  to  give  a  rough idea, on my machine this takes about a
+              minute per 500 man pages.)
+
+       --mm  ssyysstteemm
+              Specify an alternate set of man pages to  search  based  on  the
+              system name given.
+
+       --pp  ssttrriinngg
+              Specify  the  sequence  of  preprocessors to run before nnrrooffff or
+              ttrrooffff.  Not all installations will have a full set of preproces-
+              sors.   Some of the preprocessors and the letters used to desig-
+              nate them are: eqn (e), grap (g), pic (p), tbl (t), vgrind  (v),
+              refer  (r).   This  option  overrides the MMAANNRROOFFFFSSEEQQ environment
+              variable.
+
+       --tt     Use //uussrr//bbiinn//ggrrooffff --TTppss --mmaannddoocc --cc to format  the  manual  page,
+              passing  the  output  to  ssttddoouutt..   The default output format of
+              //uussrr//bbiinn//ggrrooffff --TTppss --mmaannddoocc --cc is Postscript, refer to the  man-
+              ual  page  of //uussrr//bbiinn//ggrrooffff --TTppss --mmaannddoocc --cc for ways to pick an
+              alternate format.
+
+       Depending on the selected  format  and  the  availability  of  printing
+       devices,  the  output  may  need  to  be  passed through some filter or

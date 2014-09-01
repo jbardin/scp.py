@@ -27,3 +27,17 @@ scp.get('test2.txt')
     fc264c65fb17b7db5237cf7ce1780769 test.txt
     fc264c65fb17b7db5237cf7ce1780769 test2.txt
 
+
+
+## Testing
+
+Requirements
+- py.test
+- ssh running locally, with the appropriate key for the current user loaded
+  into an ssh agent.
+- scp
+- diff
+
+Run the tests via
+
+    py.test -v tests
