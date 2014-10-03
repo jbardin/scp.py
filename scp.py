@@ -5,6 +5,8 @@
 Utilities for sending files over ssh using the scp1 protocol.
 """
 
+__version__ = '0.8.0'
+
 import os
 import re
 from socket import timeout as SocketTimeout
