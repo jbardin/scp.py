@@ -313,6 +313,8 @@ class SCPClient(object):
             msg = self.channel.recv(1024)
             if not msg:  # chan closed while recving
                 break
+            assert msg[-1] == b'\n'
+            msg = msg[:-1]
             code = msg[0:1]
             try:
                 command[code](msg[1:])
@@ -323,7 +325,7 @@ class SCPClient(object):
 
     def _set_time(self, cmd):
         try:
-            times = cmd.split()
+            times = cmd.split(b' ')
             mtime = int(times[0])
             atime = int(times[2]) or mtime
         except:
@@ -397,7 +399,7 @@ class SCPClient(object):
         # '\x00' confirmation sent in _recv_all
 
     def _recv_pushd(self, cmd):
-        parts = cmd.split()
+        parts = cmd.split(b' ', 2)
         try:
             mode = int(parts[0], 8)
             if self._rename:
