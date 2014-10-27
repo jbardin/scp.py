@@ -313,7 +313,7 @@ class SCPClient(object):
             msg = self.channel.recv(1024)
             if not msg:  # chan closed while recving
                 break
-            assert msg[-1] == b'\n'
+            assert msg[-1:] == b'\n'
             msg = msg[:-1]
             code = msg[0:1]
             try:
