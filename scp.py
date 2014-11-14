@@ -237,12 +237,12 @@ class SCPClient(object):
 
         # add path.sep to each when checking the prefix, so we can use
         # path.dirname after
-        common = os.path.commonprefix([from_dir + os.path.sep,
-                                       to_dir + os.path.sep])
+        common = os.path.commonprefix([from_dir + b'/',
+                                       to_dir + b'/'])
         # now take the dirname, since commonprefix is character based,
         # and we either have a seperator, or a partial name
         common = os.path.dirname(common)
-        cur_dir = from_dir.rstrip(os.path.sep)
+        cur_dir = from_dir.rstrip(b'/')
         while cur_dir != common:
             cur_dir = os.path.split(cur_dir)[0]
             self._send_popd()
@@ -259,7 +259,7 @@ class SCPClient(object):
             for root, dirs, fls in os.walk(base):
                 self._chdir(last_dir, asbytes(root))
                 self._send_files([os.path.join(root, f) for f in fls])
-                last_dir = root
+                last_dir = asbytes(root)
             # back out of the directory
             for i in range(len(os.path.split(last_dir))):
                 self._send_popd()
