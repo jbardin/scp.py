@@ -54,6 +54,10 @@ def asunicode(s):
         return s
 
 
+# os.path.sep is unicode on Python 3, no matter the platform
+bytes_sep = asbytes(os.path.sep)
+
+
 # Unicode conversion function for Windows
 # Used to convert local paths if the local machine is Windows
 
@@ -237,12 +241,12 @@ class SCPClient(object):
 
         # add path.sep to each when checking the prefix, so we can use
         # path.dirname after
-        common = os.path.commonprefix([from_dir + b'/',
-                                       to_dir + b'/'])
+        common = os.path.commonprefix([from_dir + bytes_sep,
+                                       to_dir + bytes_sep])
         # now take the dirname, since commonprefix is character based,
         # and we either have a seperator, or a partial name
         common = os.path.dirname(common)
-        cur_dir = from_dir.rstrip(b'/')
+        cur_dir = from_dir.rstrip(bytes_sep)
         while cur_dir != common:
             cur_dir = os.path.split(cur_dir)[0]
             self._send_popd()
