@@ -30,7 +30,7 @@ if MACOS:
         """
         normed = set()
         for n in names:
-            if not isinstance(n, unicode):
+            if isinstance(n, bytes):
                 n = n.decode('utf-8')
 
             normed.add(unicodedata.normalize('NFC', n).encode('utf-8'))
