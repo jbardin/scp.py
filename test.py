@@ -17,6 +17,26 @@ ssh_info = {
 # Environment info
 PY3 = sys.version_info >= (3,)
 WINDOWS = os.name == 'nt'
+MACOS = sys.platform == 'darwin'
+
+
+if MACOS:
+    import unicodedata
+
+    def normalize_paths(names):
+        """Ensures the test names are normalized (NFC).
+
+        HFS (on Mac OS X) will normalize filenames if necessary.
+        """
+        normed = set()
+        for n in names:
+            if not isinstance(n, unicode):
+                n = n.decode('utf-8')
+
+            normed.add(unicodedata.normalize('NFC', n).encode('utf-8'))
+        return normed
+else:
+    normalize_paths = set
 
 
 class TestSCP(unittest.TestCase):
@@ -45,7 +65,9 @@ class TestSCP(unittest.TestCase):
         assert chan.recv_exit_status() == 0
 
         print("Running tests on %s with %s" % (
-              "Windows" if WINDOWS else "POSIX",
+              "Windows" if WINDOWS else
+              "Mac OS X" if MACOS else
+              "POSIX",
               "Python 3" if PY3 else "Python 2"))
 
     def download_test(self, filename, recursive, destination=None,
@@ -66,7 +88,7 @@ class TestSCP(unittest.TestCase):
                         listdir(name, fname)
             listdir(u'' if WINDOWS else b'',
                     u'.' if WINDOWS else b'.')
-            self.assertEqual(set(actual),
+            self.assertEqual(normalize_paths(actual),
                              set(expected_win if WINDOWS else expected_posix))
         finally:
             os.chdir(previous)
@@ -102,6 +124,9 @@ class TestSCP(unittest.TestCase):
             with self.assertRaises(SCPException):
                 self.download_test(b'/tmp/p\xE9t\xE9', False, None,
                                    [], [])
+        elif MACOS:
+            self.download_test(b'/tmp/p\xE9t\xE9', False, None,
+                               [u'not windows'], [b'p%E9t%E9'])
         else:
             self.download_test(b'/tmp/p\xE9t\xE9', False, None,
                                [u'not windows'], [b'p\xE9t\xE9'])
