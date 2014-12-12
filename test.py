@@ -242,6 +242,17 @@ class TestUpload(unittest.TestCase):
                          [b'dossi\xC3\xA9',
                           b'dossi\xC3\xA9/bien rang\xC3\xA9',
                           b'dossi\xC3\xA9/bien rang\xC3\xA9/test'])
+        self.upload_test([u'cl\xE9/dossi\xE9/bien rang\xE9',
+                          u'cl\xE9/r\xE9mi'], True,
+                         [b'bien rang\xC3\xA9',
+                          b'bien rang\xC3\xA9/test',
+                          b'r\xC3\xA9mi'])
+        self.upload_test([u'cl\xE9/dossi\xE9',
+                          u'cl\xE9/r\xE9mi'], True,
+                         [b'dossi\xC3\xA9',
+                          b'dossi\xC3\xA9/bien rang\xC3\xA9',
+                          b'dossi\xC3\xA9/bien rang\xC3\xA9/test',
+                          b'r\xC3\xA9mi'])
 
 
 if __name__ == '__main__':
