@@ -195,6 +195,8 @@ class SCPClient(object):
 
     def _read_stats(self, name):
         """return just the file stats needed for scp"""
+        if os.name == 'nt':
+            name = asunicode(name)
         stats = os.stat(name)
         mode = oct(stats.st_mode)[-4:]
         size = stats.st_size

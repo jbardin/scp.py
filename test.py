@@ -2,6 +2,7 @@ from __future__ import print_function
 
 import os
 import paramiko
+import random
 import shutil
 import sys
 from scp import SCPClient, SCPException
@@ -39,7 +40,20 @@ else:
     normalize_paths = set
 
 
-class TestSCP(unittest.TestCase):
+def unique_names():
+    """Generates unique sequences of bytes.
+    """
+    characters = (b"abcdefghijklmnopqrstuvwxyz"
+                  b"0123456789")
+    characters = [characters[i:i + 1] for i in range(len(characters))]
+    rng = random.Random()
+    while True:
+        letters = [rng.choice(characters) for i in range(10)]
+        yield b''.join(letters)
+unique_names = unique_names()
+
+
+class TestDownload(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         # Server connection
@@ -136,7 +150,7 @@ class TestSCP(unittest.TestCase):
                            [b'bien rang\xC3\xA9', b'bien rang\xC3\xA9/file',
                             b'bien rang\xC3\xA9/b\xC3\xA8te'])
 
-    def test_invalid_unicode(self):
+    def test_get_invalid_unicode(self):
         self.download_test(b'/tmp/p\xE9t\xE9', False, u'target',
                            [u'target'], [b'target'])
         if WINDOWS:
@@ -149,6 +163,85 @@ class TestSCP(unittest.TestCase):
         else:
             self.download_test(b'/tmp/p\xE9t\xE9', False, None,
                                [u'not windows'], [b'p\xE9t\xE9'])
+
+
+class TestUpload(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Server connection
+        cls.ssh = paramiko.SSHClient()
+        cls.ssh.load_system_host_keys()
+        cls.ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+        cls.ssh.connect(**ssh_info)
+
+        # Makes some files locally
+        cls._temp = tempfile.mkdtemp(prefix='scp_py_test_')
+        if isinstance(cls._temp, bytes):
+            cls._temp = cls._temp.decode(sys.getfilesystemencoding())
+        inner = os.path.join(cls._temp, u'cl\xE9')
+        os.mkdir(inner)
+        os.mkdir(os.path.join(inner, u'dossi\xE9'))
+        os.mkdir(os.path.join(inner, u'dossi\xE9', u'bien rang\xE9'))
+        open(os.path.join(inner, u'dossi\xE9', u'bien rang\xE9', u'test'),
+             'w').close()
+        open(os.path.join(inner, u'r\xE9mi'), 'w').close()
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls._temp)
+
+    def upload_test(self, filenames, recursive, expected=[]):
+        destination = b'/tmp/upp\xC3\xA9' + next(unique_names)
+        chan = self.ssh.get_transport().open_session()
+        chan.exec_command(b'mkdir ' + destination)
+        assert chan.recv_exit_status() == 0
+        previous = os.getcwd()
+        try:
+            os.chdir(self._temp)
+            scp = SCPClient(self.ssh.get_transport())
+            scp.put(filenames, destination, recursive)
+
+            chan = self.ssh.get_transport().open_session()
+            chan.exec_command(
+                b'echo -ne "' +
+                destination.decode('iso-8859-1')
+                    .encode('ascii', 'backslashreplace') +
+                b'" | xargs find')
+            out_list = b''
+            while True:
+                data = chan.recv(1024)
+                if not data:
+                    break
+                out_list += data
+            prefix = len(destination) + 1
+            out_list = [l[prefix:] for l in out_list.splitlines()
+                        if len(l) > prefix]
+            self.assertEqual(set(out_list), set(expected))
+        finally:
+            os.chdir(previous)
+            chan = self.ssh.get_transport().open_session()
+            chan.exec_command(b'rm -Rf ' + destination)
+            assert chan.recv_exit_status() == 0
+
+    @unittest.skipIf(WINDOWS, "Use unicode paths on Windows")
+    def test_put_bytes(self):
+        self.upload_test(b'cl\xC3\xA9/r\xC3\xA9mi', False, [b'r\xC3\xA9mi'])
+        self.upload_test(b'cl\xC3\xA9/dossi\xC3\xA9/bien rang\xC3\xA9/test',
+                         False,
+                         [b'test'])
+        self.upload_test(b'cl\xC3\xA9/dossi\xC3\xA9', True,
+                         [b'dossi\xC3\xA9',
+                          b'dossi\xC3\xA9/bien rang\xC3\xA9',
+                          b'dossi\xC3\xA9/bien rang\xC3\xA9/test'])
+
+    def test_put_unicode(self):
+        self.upload_test(u'cl\xE9/r\xE9mi', False, [b'r\xC3\xA9mi'])
+        self.upload_test(u'cl\xE9/dossi\xE9/bien rang\xE9/test', False,
+                         [b'test'])
+        self.upload_test(u'cl\xE9/dossi\xE9', True,
+                         [b'dossi\xC3\xA9',
+                          b'dossi\xC3\xA9/bien rang\xC3\xA9',
+                          b'dossi\xC3\xA9/bien rang\xC3\xA9/test'])
 
 
 if __name__ == '__main__':
