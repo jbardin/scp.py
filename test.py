@@ -72,12 +72,23 @@ class TestSCP(unittest.TestCase):
 
     def download_test(self, filename, recursive, destination=None,
                       expected_win=[], expected_posix=[]):
+        # Make a temporary directory
         temp = tempfile.mkdtemp(prefix='scp-py_test_')
+        # Add some unicode in the path
+        if WINDOWS:
+            if isinstance(temp, bytes):
+                temp = temp.decode(sys.getfilesystemencoding())
+            temp_in = os.path.join(temp, u'cl\xE9')
+        else:
+            if not isinstance(temp, bytes):
+                temp = temp.encode('utf-8')
+            temp_in = os.path.join(temp, b'cl\xC3\xA9')
         previous = os.getcwd()
-        os.chdir(temp)
+        os.mkdir(temp_in)
+        os.chdir(temp_in)
         try:
             scp = SCPClient(self.ssh.get_transport())
-            scp.get(filename, destination if destination is not None else '.',
+            scp.get(filename, destination if destination is not None else u'.',
                     preserve_times=True, recursive=recursive)
             actual = []
             def listdir(path, fpath):
