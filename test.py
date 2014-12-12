@@ -112,6 +112,10 @@ class TestSCP(unittest.TestCase):
                            [u'target'], [b'target'])
         self.download_test(b'/tmp/r\xC3\xA9mi', False, None,
                            [u'r\xE9mi'], [b'r\xC3\xA9mi'])
+        self.download_test([b'/tmp/bien rang\xC3\xA9/file',
+                            b'/tmp/bien rang\xC3\xA9/b\xC3\xA8te'],
+                           False, None,
+                           [u'file', u'b\xE8te'], [b'file', b'b\xC3\xA8te'])
 
     def test_get_unicode(self):
         self.download_test(u'/tmp/r\xE9mi', False, b'target',
@@ -120,6 +124,10 @@ class TestSCP(unittest.TestCase):
                            [u'target'], [b'target'])
         self.download_test(u'/tmp/r\xE9mi', False, None,
                            [u'r\xE9mi'], [b'r\xC3\xA9mi'])
+        self.download_test([u'/tmp/bien rang\xE9/file',
+                            u'/tmp/bien rang\xE9/b\xE8te'],
+                           False, None,
+                           [u'file', u'b\xE8te'], [b'file', b'b\xC3\xA8te'])
 
     def test_get_folder(self):
         self.download_test(b'/tmp/bien rang\xC3\xA9', True, None,
