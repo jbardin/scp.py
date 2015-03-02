@@ -216,7 +216,7 @@ class TestUpload(unittest.TestCase):
             prefix = len(destination) + 1
             out_list = [l[prefix:] for l in out_list.splitlines()
                         if len(l) > prefix]
-            self.assertEqual(set(out_list), set(expected))
+            self.assertEqual(normalize_paths(out_list), set(expected))
         finally:
             os.chdir(previous)
             chan = self.ssh.get_transport().open_session()
