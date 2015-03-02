@@ -131,6 +131,7 @@ class SCPClient(object):
         """
         self.preserve_times = preserve_times
         self.channel = self.transport.open_session()
+        self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
         scp_command = (b'scp -t ', b'scp -r -t ')[recursive]
         self.channel.exec_command(scp_command +
@@ -181,6 +182,7 @@ class SCPClient(object):
         rcsv = (b'', b' -r')[recursive]
         prsv = (b'', b' -p')[preserve_times]
         self.channel = self.transport.open_session()
+        self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
         self.channel.exec_command(b"scp" +
                                   rcsv +
@@ -194,6 +196,8 @@ class SCPClient(object):
 
     def _read_stats(self, name):
         """return just the file stats needed for scp"""
+        if os.name == 'nt':
+            name = asunicode(name)
         stats = os.stat(name)
         mode = oct(stats.st_mode)[-4:]
         size = stats.st_size
@@ -264,7 +268,7 @@ class SCPClient(object):
                 self._send_files([os.path.join(root, f) for f in fls])
                 last_dir = asbytes(root)
             # back out of the directory
-            for i in range(len(os.path.split(last_dir))):
+            while self._pushed > 0:
                 self._send_popd()
 
     def _send_pushd(self, directory):
@@ -275,10 +279,12 @@ class SCPClient(object):
         self.channel.sendall(('D%s 0 ' % mode).encode('ascii') +
                              basename.replace(b'\n', b'\\^J') + b'\n')
         self._recv_confirm()
+        self._pushed += 1
 
     def _send_popd(self):
         self.channel.sendall('E\n')
         self._recv_confirm()
+        self._pushed -= 1
 
     def _send_time(self, mtime, atime):
         self.channel.sendall(('T%d 0 %d 0\n' % (mtime, atime)).encode('ascii'))
