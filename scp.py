@@ -328,7 +328,7 @@ class SCPClient(object):
             try:
                 command[code](msg[1:])
             except KeyError:
-                raise SCPException(str(msg).strip())
+                raise SCPException(asunicode(msg[1:]))
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
 
@@ -392,7 +392,7 @@ class SCPClient(object):
 
             msg = chan.recv(512)
             if msg and msg[0:1] != b'\x00':
-                raise SCPException(msg[1:])
+                raise SCPException(asunicode(msg[1:]))
         except SocketTimeout:
             chan.close()
             raise SCPException('Error receiving, socket.timeout')
