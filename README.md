@@ -23,7 +23,7 @@ scp = SCPClient(ssh.get_transport())
 scp.put('test.txt', 'test2.txt')
 scp.get('test2.txt')
 ```
-    $ md5sum test.xt test2.txt
+    $ md5sum test.txt test2.txt
     fc264c65fb17b7db5237cf7ce1780769 test.txt
     fc264c65fb17b7db5237cf7ce1780769 test2.txt
 
