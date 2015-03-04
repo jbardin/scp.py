@@ -190,6 +190,7 @@ class SCPClient(object):
                                       prsv +
                                       b" -f " +
                                       b' '.join(remote_path))
+            self._recv_all()
         except:
             # Check to see if we have some data on the channel.
             data = self.channel.recv(self.buff_size)
@@ -230,7 +231,7 @@ class SCPClient(object):
             # Quote them as the control sequence \^J for now,
             # which is how openssh handles it.
             self.channel.sendall(("C%s %d " % (mode, size)).encode('ascii') +
-                                 basename.replace(b'\n', b'\\^J') + b"\n")
+                                 send_name.replace(b'\n', b'\\^J') + b"\n")
             self._recv_confirm()
             file_pos = 0
             if self._progress:
@@ -329,11 +330,11 @@ class SCPClient(object):
                    b'T': self._set_time,
                    b'D': self._recv_pushd,
                    b'E': self._recv_popd}
-        while not self.channel.closed:
-            # wait for command as long as we're open
-            self.channel.sendall('\x00')
+        while True:
+            # Read next command
             msg = self.channel.recv(1024)
-            if not msg:  # chan closed while recving
+            if not msg:
+                # No more data to receive.
                 break
             assert msg[-1:] == b'\n'
             msg = msg[:-1]
@@ -342,8 +343,8 @@ class SCPClient(object):
                 command[code](msg[1:])
             except KeyError:
                 raise SCPException(asunicode(msg[1:]))
-            # Confirm command end.
             if not self.channel.closed:
+                # Confirm command end.
                 self.channel.sendall('\x00')
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
@@ -373,10 +374,6 @@ class SCPClient(object):
         try:
             mode = int(parts[0], 8)
             size = int(parts[1])
-            path = parts[2]
-            if os.name == 'nt':
-                path = path.decode('utf-8')
-            path = os.path.join(self._recv_dir, path)
             if self._rename:
                 path = self._recv_dir
                 self._rename = False
@@ -429,7 +426,6 @@ class SCPClient(object):
 
                 file_hdl.write(data)
                 pos = file_hdl.tell()
-
                 if self._progress:
                     self._progress(path, size, pos)
 
