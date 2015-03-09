@@ -11,7 +11,9 @@ import unittest
 
 
 ssh_info = {
-    'hostname': '127.0.0.1',
+    'hostname': os.environ.get('SCPPY_HOSTNAME', '127.0.0.1'),
+    'port': int(os.environ.get('SCPPY_PORT', 22)),
+    'username': os.environ.get('SCPPY_USERNAME', None),
 }
 
 
