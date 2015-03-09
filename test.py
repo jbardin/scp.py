@@ -7,7 +7,11 @@ import shutil
 import sys
 from scp import SCPClient, SCPException
 import tempfile
-import unittest
+try:
+    import unittest2 as unittest
+    sys.modules['unittest'] = unittest
+except ImportError:
+    import unittest
 
 
 ssh_info = {
