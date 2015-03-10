@@ -9,7 +9,7 @@ setup(
         author = 'James Bardin',
         author_email = 'j.bardin@gmail.com',
         license = 'LGPL',
-        url = 'https://github.com/jbardin/scp.py.git',
+        url = 'https://github.com/jbardin/scp.py',
         description='scp module for paramiko',
         py_modules = ['scp'],
         install_requires = ['paramiko'],
