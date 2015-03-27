@@ -112,6 +112,13 @@ class SCPClient(object):
         self.sanitize = sanitize
         self._dirtimes = {}
 
+    def __enter__(self):
+        self.channel = self._open()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
     def put(self, files, remote_path=b'.',
             recursive=False, preserve_times=False):
         """
@@ -130,7 +137,7 @@ class SCPClient(object):
         @type preserve_times: bool
         """
         self.preserve_times = preserve_times
-        self.channel = self.transport.open_session()
+        self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
         scp_command = (b'scp -t ', b'scp -r -t ')[recursive]
@@ -145,9 +152,6 @@ class SCPClient(object):
             self._send_recursive(files)
         else:
             self._send_files(files)
-
-        if self.channel:
-            self.channel.close()
 
     def get(self, remote_path, local_path='',
             recursive=False, preserve_times=False):
@@ -181,7 +185,7 @@ class SCPClient(object):
                                    asunicode(self._recv_dir))
         rcsv = (b'', b' -r')[recursive]
         prsv = (b'', b' -p')[preserve_times]
-        self.channel = self.transport.open_session()
+        self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
         self.channel.exec_command(b"scp" +
@@ -191,8 +195,18 @@ class SCPClient(object):
                                   b' '.join(remote_path))
         self._recv_all()
 
-        if self.channel:
+    def _open(self):
+        """open a scp channel"""
+        if self.channel is None:
+            self.channel = self.transport.open_session()
+
+        return self.channel
+
+    def close(self):
+        """close scp channel"""
+        if self.channel is not None:
             self.channel.close()
+            self.channel = None
 
     def _read_stats(self, name):
         """return just the file stats needed for scp"""

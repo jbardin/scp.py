@@ -107,9 +107,10 @@ class TestDownload(unittest.TestCase):
         os.mkdir(temp_in)
         os.chdir(temp_in)
         try:
-            scp = SCPClient(self.ssh.get_transport())
-            scp.get(filename, destination if destination is not None else u'.',
-                    preserve_times=True, recursive=recursive)
+            with SCPClient(self.ssh.get_transport()) as scp:
+                scp.get(filename,
+                        destination if destination is not None else u'.',
+                        preserve_times=True, recursive=recursive)
             actual = []
             def listdir(path, fpath):
                 for name in os.listdir(fpath):
@@ -204,8 +205,8 @@ class TestUpload(unittest.TestCase):
         previous = os.getcwd()
         try:
             os.chdir(self._temp)
-            scp = SCPClient(self.ssh.get_transport())
-            scp.put(filenames, destination, recursive)
+            with SCPClient(self.ssh.get_transport()) as scp:
+                scp.put(filenames, destination, recursive)
 
             chan = self.ssh.get_transport().open_session()
             chan.exec_command(
