@@ -153,6 +153,8 @@ class SCPClient(object):
         else:
             self._send_files(files)
 
+        self.close()
+
     def get(self, remote_path, local_path='',
             recursive=False, preserve_times=False):
         """
@@ -194,6 +196,7 @@ class SCPClient(object):
                                   b" -f " +
                                   b' '.join(remote_path))
         self._recv_all()
+        self.close()
 
     def _open(self):
         """open a scp channel"""
@@ -311,7 +314,7 @@ class SCPClient(object):
             msg = self.channel.recv(512)
         except SocketTimeout:
             raise SCPException('Timout waiting for scp response')
-        # slice off the first byte, so this compare will work in python2 and python3
+        # slice off the first byte, so this compare will work in py2 and py3
         if msg and msg[0:1] == b'\x00':
             return
         elif msg and msg[0:1] == b'\x01':
