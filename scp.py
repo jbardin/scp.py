@@ -105,6 +105,7 @@ class SCPClient(object):
         self.socket_timeout = socket_timeout
         self.channel = None
         self.preserve_times = False
+        self.preserve_mode = None
         self._progress = progress
         self._recv_dir = b''
         self._rename = False
@@ -120,7 +121,7 @@ class SCPClient(object):
         self.close()
 
     def put(self, files, remote_path=b'.',
-            recursive=False, preserve_times=False):
+            recursive=False, preserve_times=False, preserve_mode=False):
         """
         Transfer files to remote host.
 
@@ -135,12 +136,19 @@ class SCPClient(object):
         @param preserve_times: preserve mtime and atime of transfered files
             and directories.
         @type preserve_times: bool
+        @param preserve_mode: preserve file mode of transfered files and
+            directories. Can be a boolean or any valid octal mode string/int.
+            example: False, True, 0b644 and '644' are valid. 'a+x' is invalid.
+        @type preserve_mode bool OR string OR int
         """
         self.preserve_times = preserve_times
+        self.preserve_mode = preserve_mode
         self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
         scp_command = (b'scp -t ', b'scp -r -t ')[recursive]
+        if self.preserve_mode is not False:
+            scp_command += b'-p '
         self.channel.exec_command(scp_command +
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
@@ -211,12 +219,21 @@ class SCPClient(object):
             self.channel.close()
             self.channel = None
 
+    def _mode_to_string(self, mode):
+        if not isinstance(self.preserve_mode, bool):
+            mode = self.preserve_mode # Override default file mode
+        if isinstance(mode, int):
+            mode = '{0:04o}'.format(mode)
+        else:
+            mode.zfill(4)
+        return mode[-4:]
+
     def _read_stats(self, name):
         """return just the file stats needed for scp"""
         if os.name == 'nt':
             name = asunicode(name)
         stats = os.stat(name)
-        mode = oct(stats.st_mode)[-4:]
+        mode = stats.st_mode
         size = stats.st_size
         atime = int(stats.st_atime)
         mtime = int(stats.st_mtime)
@@ -228,6 +245,7 @@ class SCPClient(object):
             (mode, size, mtime, atime) = self._read_stats(name)
             if self.preserve_times:
                 self._send_time(mtime, atime)
+            mode = self._mode_to_string(mode)
             file_hdl = open(name, 'rb')
 
             # The protocol can't handle \n in the filename.
