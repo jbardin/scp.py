@@ -309,6 +309,7 @@ class SCPClient(object):
     def _send_pushd(self, directory):
         (mode, size, mtime, atime) = self._read_stats(directory)
         basename = asbytes(os.path.basename(directory))
+        mode = self._mode_to_string(mode)
         if self.preserve_times:
             self._send_time(mtime, atime)
         self.channel.sendall(('D%s 0 ' % mode).encode('ascii') +
