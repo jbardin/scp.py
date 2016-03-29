@@ -349,20 +349,25 @@ class SCPClient(object):
                    b'E': self._recv_popd}
         while True:
             # Read next command
-            msg = self.channel.recv(1024)
-            if not msg:
+            data = self.channel.recv(1024)
+            if not data:
                 # No more data to receive.
                 break
-            assert msg[-1:] == b'\n'
-            msg = msg[:-1]
-            code = msg[0:1]
+
+            if '\n' not in command:
+                # Command is not yet completely read.
+                data += self.channel.recv(1024)
+
+            code = data[0:1]
             try:
-                command[code](msg[1:])
+                command[code](data[1:])
             except KeyError:
-                raise SCPException(asunicode(msg[1:]))
+                raise SCPException(asunicode(data[1:]))
+
             if not self.channel.closed:
                 # Confirm command end.
                 self.channel.sendall('\x00')
+
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
 
