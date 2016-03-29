@@ -7,11 +7,17 @@ import shutil
 import sys
 from scp import SCPClient, SCPException
 import tempfile
-import unittest
+try:
+    import unittest2 as unittest
+    sys.modules['unittest'] = unittest
+except ImportError:
+    import unittest
 
 
 ssh_info = {
-    'hostname': '127.0.0.1',
+    'hostname': os.environ.get('SCPPY_HOSTNAME', '127.0.0.1'),
+    'port': int(os.environ.get('SCPPY_PORT', 22)),
+    'username': os.environ.get('SCPPY_USERNAME', None),
 }
 
 TIMEOUT = 0.5
@@ -102,10 +108,12 @@ class TestDownload(unittest.TestCase):
         os.mkdir(temp_in)
         os.chdir(temp_in)
         try:
-            scp = SCPClient(self.ssh.get_transport(), socket_timeout=TIMEOUT)
-            scp.get(filename, destination if destination is not None else u'.',
-                    preserve_times=True, recursive=recursive)
+            with SCPClient(self.ssh.get_transport(), socket_timeout=TIMEOUT) as scp:
+                scp.get(filename,
+                        destination if destination is not None else u'.',
+                        preserve_times=True, recursive=recursive)
             actual = []
+
             def listdir(path, fpath):
                 for name in os.listdir(fpath):
                     fname = os.path.join(fpath, name)
@@ -199,8 +207,8 @@ class TestUpload(unittest.TestCase):
         previous = os.getcwd()
         try:
             os.chdir(self._temp)
-            scp = SCPClient(self.ssh.get_transport(), socket_timeout=TIMEOUT)
-            scp.put(filenames, destination, recursive)
+            with SCPClient(self.ssh.get_transport(), socket_timeout=TIMEOUT) as scp:
+                scp.put(filenames, destination, recursive)
 
             chan = self.ssh.get_transport().open_session()
             chan.exec_command(
@@ -254,6 +262,43 @@ class TestUpload(unittest.TestCase):
                           b'dossi\xC3\xA9/bien rang\xC3\xA9',
                           b'dossi\xC3\xA9/bien rang\xC3\xA9/test',
                           b'r\xC3\xA9mi'])
+
+
+class TestUpAndDown(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        # Server connection
+        cls.ssh = paramiko.SSHClient()
+        cls.ssh.load_system_host_keys()
+        cls.ssh.set_missing_host_key_policy(paramiko.WarningPolicy())
+        cls.ssh.connect(**ssh_info)
+
+        # Makes some files locally
+        cls._temp = tempfile.mkdtemp(prefix='scp_py_test_')
+        if isinstance(cls._temp, bytes):
+            cls._temp = cls._temp.decode(sys.getfilesystemencoding())
+
+    @classmethod
+    def tearDownClass(cls):
+        shutil.rmtree(cls._temp)
+
+    def test_up_and_down(self):
+        '''send and receive files with the same client'''
+        previous = os.getcwd()
+        testfile = os.path.join(self._temp, 'testfile')
+        testfile_sent = os.path.join(self._temp, 'testfile_sent')
+        testfile_rcvd = os.path.join(self._temp, 'testfile_rcvd')
+        try:
+            os.chdir(self._temp)
+            with open(testfile, 'w') as f:
+                f.write("TESTING\n")
+            with SCPClient(self.ssh.get_transport()) as scp:
+                scp.put(testfile, testfile_sent)
+                scp.get(testfile_sent, testfile_rcvd)
+
+            assert open(testfile_rcvd).read() == 'TESTING\n'
+        finally:
+            os.chdir(previous)
 
 
 if __name__ == '__main__':

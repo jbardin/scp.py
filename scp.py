@@ -5,7 +5,7 @@
 Utilities for sending files over ssh using the scp1 protocol.
 """
 
-__version__ = '0.8.0'
+__version__ = '0.10.2'
 
 import locale
 import os
@@ -112,6 +112,13 @@ class SCPClient(object):
         self.sanitize = sanitize
         self._dirtimes = {}
 
+    def __enter__(self):
+        self.channel = self._open()
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
+
     def put(self, files, remote_path=b'.',
             recursive=False, preserve_times=False):
         """
@@ -130,7 +137,7 @@ class SCPClient(object):
         @type preserve_times: bool
         """
         self.preserve_times = preserve_times
-        self.channel = self.transport.open_session()
+        self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
         scp_command = (b'scp -t ', b'scp -r -t ')[recursive]
@@ -146,8 +153,7 @@ class SCPClient(object):
         else:
             self._send_files(files)
 
-        if self.channel:
-            self.channel.close()
+        self.close()
 
     def get(self, remote_path, local_path='',
             recursive=False, preserve_times=False):
@@ -181,7 +187,7 @@ class SCPClient(object):
                                    asunicode(self._recv_dir))
         rcsv = (b'', b' -r')[recursive]
         prsv = (b'', b' -p')[preserve_times]
-        self.channel = self.transport.open_session()
+        self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
         try:
@@ -201,9 +207,20 @@ class SCPClient(object):
             message = data[1:]
             raise SCPException('%s %s' % (code, message))
         self._recv_all()
+        self.close()
 
-        if self.channel:
+    def _open(self):
+        """open a scp channel"""
+        if self.channel is None:
+            self.channel = self.transport.open_session()
+
+        return self.channel
+
+    def close(self):
+        """close scp channel"""
+        if self.channel is not None:
             self.channel.close()
+            self.channel = None
 
     def _read_stats(self, name):
         """return just the file stats needed for scp"""
@@ -311,7 +328,7 @@ class SCPClient(object):
             msg = self.channel.recv(512)
         except SocketTimeout:
             raise SCPException('Timout waiting for scp response')
-        # slice off the first byte, so this compare will work in python2 and python3
+        # slice off the first byte, so this compare will work in py2 and py3
         if msg and msg[0:1] == b'\x00':
             return
         elif msg and msg[0:1] == b'\x01':
