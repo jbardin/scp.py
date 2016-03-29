@@ -354,7 +354,7 @@ class SCPClient(object):
                 # No more data to receive.
                 break
 
-            if '\n' not in command:
+            if '\n' not in data:
                 # Command is not yet completely read.
                 data += self.channel.recv(1024)
 
