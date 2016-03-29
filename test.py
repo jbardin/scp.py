@@ -20,6 +20,7 @@ ssh_info = {
     'username': os.environ.get('SCPPY_USERNAME', None),
 }
 
+TIMEOUT = 0.5
 
 # Environment info
 PY3 = sys.version_info >= (3,)
@@ -107,7 +108,7 @@ class TestDownload(unittest.TestCase):
         os.mkdir(temp_in)
         os.chdir(temp_in)
         try:
-            with SCPClient(self.ssh.get_transport()) as scp:
+            with SCPClient(self.ssh.get_transport(), socket_timeout=TIMEOUT) as scp:
                 scp.get(filename,
                         destination if destination is not None else u'.',
                         preserve_times=True, recursive=recursive)
@@ -206,7 +207,7 @@ class TestUpload(unittest.TestCase):
         previous = os.getcwd()
         try:
             os.chdir(self._temp)
-            with SCPClient(self.ssh.get_transport()) as scp:
+            with SCPClient(self.ssh.get_transport(), socket_timeout=TIMEOUT) as scp:
                 scp.put(filenames, destination, recursive)
 
             chan = self.ssh.get_transport().open_session()

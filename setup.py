@@ -19,4 +19,5 @@ setup(
         long_description=description,
         py_modules = ['scp'],
         install_requires = ['paramiko'],
+        test_suite = 'test'
 )

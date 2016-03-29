@@ -190,11 +190,22 @@ class SCPClient(object):
         self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
-        self.channel.exec_command(b"scp" +
-                                  rcsv +
-                                  prsv +
-                                  b" -f " +
-                                  b' '.join(remote_path))
+        try:
+            self.channel.exec_command(b"scp" +
+                                      rcsv +
+                                      prsv +
+                                      b" -f " +
+                                      b' '.join(remote_path))
+            self._recv_all()
+        except:
+            # Check to see if we have some data on the channel.
+            data = self.channel.recv(self.buff_size)
+            if not data:
+                raise
+
+            code = data[0]
+            message = data[1:]
+            raise SCPException('%s %s' % (code, message))
         self._recv_all()
         self.close()
 
@@ -230,11 +241,14 @@ class SCPClient(object):
                 self._send_time(mtime, atime)
             file_hdl = open(name, 'rb')
 
+            send_name = basename
+            if os.name == 'nt':
+                send_name = send_name.encode('utf-8')
             # The protocol can't handle \n in the filename.
             # Quote them as the control sequence \^J for now,
             # which is how openssh handles it.
             self.channel.sendall(("C%s %d " % (mode, size)).encode('ascii') +
-                                 basename.replace(b'\n', b'\\^J') + b"\n")
+                                 send_name.replace(b'\n', b'\\^J') + b"\n")
             self._recv_confirm()
             file_pos = 0
             if self._progress:
@@ -333,19 +347,27 @@ class SCPClient(object):
                    b'T': self._set_time,
                    b'D': self._recv_pushd,
                    b'E': self._recv_popd}
-        while not self.channel.closed:
-            # wait for command as long as we're open
-            self.channel.sendall('\x00')
-            msg = self.channel.recv(1024)
-            if not msg:  # chan closed while recving
+        while True:
+            # Read next command
+            data = self.channel.recv(1024)
+            if not data:
+                # No more data to receive.
                 break
-            assert msg[-1:] == b'\n'
-            msg = msg[:-1]
-            code = msg[0:1]
+
+            if '\n' not in data:
+                # Command is not yet completely read.
+                data += self.channel.recv(1024)
+
+            code = data[0:1]
             try:
-                command[code](msg[1:])
+                command[code](data[1:])
             except KeyError:
-                raise SCPException(asunicode(msg[1:]))
+                raise SCPException(asunicode(data[1:]))
+
+            if not self.channel.closed:
+                # Confirm command end.
+                self.channel.sendall('\x00')
+
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
 
@@ -362,6 +384,13 @@ class SCPClient(object):
 
     def _recv_file(self, cmd):
         chan = self.channel
+        # Command might already contain data from the file.
+        # Command end with a new line then data follows.
+        parts = cmd.split('\n', 1)
+        cmd = parts[0]
+        already_received = ''
+        if len(parts) > 1:
+            already_received = parts[1]
         parts = cmd.strip().split(b' ', 2)
 
         try:
@@ -397,17 +426,37 @@ class SCPClient(object):
         buff_size = self.buff_size
         pos = 0
         chan.send(b'\x00')
+
+        # Write data which was already received buffer.
+        if already_received:
+            data = already_received[:size]
+            already_received = already_received[size:]
+            file_hdl.write(data)
+            pos = file_hdl.tell()
+
         try:
             while pos < size:
                 # we have to make sure we don't read the final byte
                 if size - pos <= buff_size:
                     buff_size = size - pos
-                file_hdl.write(chan.recv(buff_size))
+                data = chan.recv(buff_size)
+
+                # Channel return empty string when no more data can be
+                # received (ex channel close, eof received)
+                if len(data) == 0:
+                    pos = size
+
+                file_hdl.write(data)
                 pos = file_hdl.tell()
                 if self._progress:
                     self._progress(path, size, pos)
 
+            # Check final response code.
             msg = chan.recv(512)
+            if already_received:
+                # We might already have received the status in the initial
+                # read. Ex for small files.
+                msg = already_received + msg
             if msg and msg[0:1] != b'\x00':
                 raise SCPException(asunicode(msg[1:]))
         except SocketTimeout:
