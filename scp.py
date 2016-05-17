@@ -488,3 +488,53 @@ class SCPClient(object):
 class SCPException(Exception):
     """SCP exception class"""
     pass
+
+
+def put(transport, files, remote_path=b'.',
+        recursive=False, preserve_times=False):
+    """
+    Transfer files and directories to remote host.
+
+    This is a convenience function that creates a SCPClient from the given
+    transport and closes it at the end, useful for one-off transfers.
+
+    @param files: A single path, or a list of paths to be transferred.
+        recursive must be True to transfer directories.
+    @type files: string OR list of strings
+    @param remote_path: path in which to receive the files on the remote host.
+        defaults to '.'
+    @type remote_path: str
+    @param recursive: transfer files and directories recursively
+    @type recursive: bool
+    @param preserve_times: preserve mtime and atime of transferred files and
+        directories.
+    @type preserve_times: bool
+    """
+    with SCPClient(transport) as client:
+        client.put(files, remote_path, recursive, preserve_times)
+
+
+def get(transport, remote_path, local_path='',
+        recursive=False, preserve_times=False):
+    """
+    Transfer files and directories from remote host to localhost.
+
+    This is a convenience function that creates a SCPClient from the given
+    transport and closes it at the end, useful for one-off transfers.
+
+    @param transport: an paramiko L{Transport}
+    @type transport: L{Transport}
+    @param remote_path: path to retrieve from remote host. since this is
+        evaluated by scp on the remote host, shell wildcards and environment
+        variables may be used.
+    @type remote_path: str
+    @param local_path: path in which to receive files locally
+    @type local_path: str
+    @param recursive: transfer files and directories recursively
+    @type recursive: bool
+    @param preserve_times: preserve mtime and atime of transferred files
+        and directories.
+    @type preserve_times: bool
+    """
+    with SCPClient(transport) as client:
+        client.get(remote_path, local_path, recursive, preserve_times)

@@ -6,7 +6,7 @@ import paramiko
 import random
 import shutil
 import sys
-from scp import SCPClient, SCPException
+from scp import SCPClient, SCPException, put, get
 import tempfile
 try:
     import unittest2 as unittest
@@ -304,9 +304,8 @@ class TestUpAndDown(unittest.TestCase):
             os.chdir(self._temp)
             with open(testfile, 'w') as f:
                 f.write("TESTING\n")
-            with SCPClient(self.ssh.get_transport()) as scp:
-                scp.put(testfile, testfile_sent)
-                scp.get(testfile_sent, testfile_rcvd)
+            put(self.ssh.get_transport(), testfile, testfile_sent)
+            get(self.ssh.get_transport(), testfile_sent, testfile_rcvd)
 
             assert open(testfile_rcvd).read() == 'TESTING\n'
         finally:
