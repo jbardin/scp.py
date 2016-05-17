@@ -124,7 +124,7 @@ class SCPClient(object):
         """
         Transfer files and directories to remote host.
 
-        @param files: A single path, or a list of paths to be transfered.
+        @param files: A single path, or a list of paths to be transferred.
             recursive must be True to transfer directories.
         @type files: string OR list of strings
         @param remote_path: path in which to receive the files on the remote
@@ -132,7 +132,7 @@ class SCPClient(object):
         @type remote_path: str
         @param recursive: transfer files and directories recursively
         @type recursive: bool
-        @param preserve_times: preserve mtime and atime of transfered files
+        @param preserve_times: preserve mtime and atime of transferred files
             and directories.
         @type preserve_times: bool
         """
@@ -179,7 +179,7 @@ class SCPClient(object):
         """
         Transfer files and directories from remote host to localhost.
 
-        @param remote_path: path to retreive from remote host. since this is
+        @param remote_path: path to retrieve from remote host. since this is
             evaluated by scp on the remote host, shell wildcards and
             environment variables may be used.
         @type remote_path: str
@@ -187,7 +187,7 @@ class SCPClient(object):
         @type local_path: str
         @param recursive: transfer files and directories recursively
         @type recursive: bool
-        @param preserve_times: preserve mtime and atime of transfered files
+        @param preserve_times: preserve mtime and atime of transferred files
             and directories.
         @type preserve_times: bool
         """
@@ -285,7 +285,7 @@ class SCPClient(object):
         common = os.path.commonprefix([from_dir + bytes_sep,
                                        to_dir + bytes_sep])
         # now take the dirname, since commonprefix is character based,
-        # and we either have a seperator, or a partial name
+        # and we either have a separator, or a partial name
         common = os.path.dirname(common)
         cur_dir = from_dir.rstrip(bytes_sep)
         while cur_dir != common:
@@ -334,7 +334,7 @@ class SCPClient(object):
         try:
             msg = self.channel.recv(512)
         except SocketTimeout:
-            raise SCPException('Timout waiting for scp response')
+            raise SCPException('Timeout waiting for scp response')
         # slice off the first byte, so this compare will work in py2 and py3
         if msg and msg[0:1] == b'\x00':
             return
