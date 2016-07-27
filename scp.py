@@ -144,7 +144,8 @@ class SCPClient(object):
         self.channel.settimeout(self.socket_timeout)
         scp_command = b'scp -t '
         scp_command += (b'', b' -r ')[recursive]
-        scp_command += (b'', b' -l '+ str(limit_bandwidth).encode() + b' ')[limit_bandwidth > 0]
+        if limit_bandwidth > 0:
+            scp_command += b' -l ' + str(limit_bandwidth).encode() + b' '
         self.channel.exec_command(scp_command +
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
