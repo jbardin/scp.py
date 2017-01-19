@@ -343,7 +343,7 @@ class SCPClient(object):
             msg = msg[:-1]
             code = msg[0:1]
             try:
-                command[code](msg[1:])
+                command[code](msg[1:].decode()) # $$python3-hotfix$$
             except KeyError:
                 raise SCPException(asunicode(msg[1:]))
         # directory times can't be set until we're done writing files
