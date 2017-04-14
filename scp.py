@@ -120,7 +120,7 @@ class SCPClient(object):
         self.close()
 
     def put(self, files, remote_path=b'.',
-            recursive=False, preserve_times=False):
+            recursive=False, preserve_times=False, chmod=None):
         """
         Transfer files to remote host.
 
@@ -135,6 +135,10 @@ class SCPClient(object):
         @param preserve_times: preserve mtime and atime of transfered files
             and directories.
         @type preserve_times: bool
+        @param chmod: Specify a new mode for the destination files. The
+            default value of None will use the current mode of the source
+            file.
+        @type chmod: numeric (octal, hex, int, etc.)
         """
         self.preserve_times = preserve_times
         self.channel = self._open()
@@ -149,9 +153,9 @@ class SCPClient(object):
             files = [files]
 
         if recursive:
-            self._send_recursive(files)
+            self._send_recursive(files, chmod)
         else:
-            self._send_files(files)
+            self._send_files(files, chmod)
 
         self.close()
 
@@ -222,12 +226,14 @@ class SCPClient(object):
         mtime = int(stats.st_mtime)
         return (mode, size, mtime, atime)
 
-    def _send_files(self, files):
+    def _send_files(self, files, chmod=None):
         for name in files:
             basename = asbytes(os.path.basename(name))
             (mode, size, mtime, atime) = self._read_stats(name)
             if self.preserve_times:
                 self._send_time(mtime, atime)
+            if chmod is not None:
+                mode = chmod
             file_hdl = open(name, 'rb')
 
             # The protocol can't handle \n in the filename.
@@ -273,16 +279,16 @@ class SCPClient(object):
         # now we're in our common base directory, so on
         self._send_pushd(to_dir)
 
-    def _send_recursive(self, files):
+    def _send_recursive(self, files, chmod=None):
         for base in files:
             if not os.path.isdir(base):
                 # filename mixed into the bunch
-                self._send_files([base])
+                self._send_files([base], chmod)
                 continue
             last_dir = asbytes(base)
             for root, dirs, fls in os.walk(base):
                 self._chdir(last_dir, asbytes(root))
-                self._send_files([os.path.join(root, f) for f in fls])
+                self._send_files([os.path.join(root, f) for f in fls], chmod)
                 last_dir = asbytes(root)
             # back out of the directory
             while self._pushed > 0:
