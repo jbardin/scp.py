@@ -200,7 +200,8 @@ class SCPClient(object):
 
     def _open(self):
         """open a scp channel"""
-        if self.channel is None:
+        if self.channel is None or \
+                self.channel.closed is True:
             self.channel = self.transport.open_session()
 
         return self.channel
