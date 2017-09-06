@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+from io import BytesIO
 import os
 import paramiko
 import random
@@ -198,7 +199,7 @@ class TestUpload(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls._temp)
 
-    def upload_test(self, filenames, recursive, expected=[]):
+    def upload_test(self, filenames, recursive, expected=[], fl=None):
         destination = b'/tmp/upp\xC3\xA9' + next(unique_names)
         chan = self.ssh.get_transport().open_session()
         chan.exec_command(b'mkdir ' + destination)
@@ -207,7 +208,13 @@ class TestUpload(unittest.TestCase):
         try:
             os.chdir(self._temp)
             with SCPClient(self.ssh.get_transport()) as scp:
-                scp.put(filenames, destination, recursive)
+                if not fl:
+                    scp.put(filenames, destination, recursive)
+                else:
+                    prefix = destination.decode(sys.getfilesystemencoding())
+                    remote_path = '%s/%s' % (prefix, filenames)
+                    scp.putfo(fl, remote_path)
+                    fl.close()
 
             chan = self.ssh.get_transport().open_session()
             chan.exec_command(
@@ -261,6 +268,12 @@ class TestUpload(unittest.TestCase):
                           b'dossi\xC3\xA9/bien rang\xC3\xA9',
                           b'dossi\xC3\xA9/bien rang\xC3\xA9/test',
                           b'r\xC3\xA9mi'])
+
+    def test_putfo(self):
+        fl = BytesIO()
+        fl.write(b'r\xC3\xA9mi')
+        fl.seek(0)
+        self.upload_test(u'putfo-test', False, [b'putfo-test'], fl)
 
 
 class TestUpAndDown(unittest.TestCase):
