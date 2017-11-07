@@ -363,10 +363,9 @@ class SCPClient(object):
             assert msg[-1:] == b'\n'
             msg = msg[:-1]
             code = msg[0:1]
-            try:
-                command[code](msg[1:])
-            except KeyError:
+            if code not in command:
                 raise SCPException(asunicode(msg[1:]))
+            command[code](msg[1:])
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
 
