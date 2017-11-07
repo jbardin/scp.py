@@ -55,3 +55,33 @@ Using 'with' keyword
     $ md5sum test.txt test2.txt
     fc264c65fb17b7db5237cf7ce1780769 test.txt
     fc264c65fb17b7db5237cf7ce1780769 test2.txt
+
+
+Uploading file-like objects
+---------------------------
+
+The ``putfo`` method can be used to upload file-like objects:
+
+..  code-block:: python
+
+    import io
+    from paramiko import SSHClient
+    from scp import SCPClient
+
+    ssh = SSHClient()
+    ssh.load_system_host_keys()
+    ssh.connect('example.com')
+
+    # SCPCLient takes a paramiko transport as its only argument
+    scp = SCPClient(ssh.get_transport())
+
+    # generate in-memory file-like object
+    fl = io.BytesIO()
+    fl.write(b'test')
+    fl.seek(0)
+    # upload it directly from memory
+    scp.putfo(fl, '/tmp/test.txt')
+    # close connection
+    scp.close()
+    # close file handler
+    fl.close()
