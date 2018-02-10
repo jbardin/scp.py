@@ -18,7 +18,7 @@ Example
     ssh.load_system_host_keys()
     ssh.connect('example.com')
 
-    # SCPCLient takes a paramiko transport as its only argument
+    # SCPCLient takes a paramiko transport as an argument
     scp = SCPClient(ssh.get_transport())
 
     scp.put('test.txt', 'test2.txt')
@@ -76,7 +76,7 @@ The ``putfo`` method can be used to upload file-like objects:
     ssh.load_system_host_keys()
     ssh.connect('example.com')
 
-    # SCPCLient takes a paramiko transport as its only argument
+    # SCPCLient takes a paramiko transport as an argument
     scp = SCPClient(ssh.get_transport())
 
     # generate in-memory file-like object
