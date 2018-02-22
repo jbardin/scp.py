@@ -122,7 +122,7 @@ class SCPClient(object):
     def put(self, files, remote_path=b'.',
             recursive=False, preserve_times=False):
         """
-        Transfer files to remote host.
+        Transfer files and directories to remote host.
 
         @param files: A single path, or a list of paths to be transfered.
             recursive must be True to transfer directories.
@@ -177,7 +177,7 @@ class SCPClient(object):
     def get(self, remote_path, local_path='',
             recursive=False, preserve_times=False):
         """
-        Transfer files from remote host to localhost
+        Transfer files and directories from remote host to localhost.
 
         @param remote_path: path to retreive from remote host. since this is
             evaluated by scp on the remote host, shell wildcards and
