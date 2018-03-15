@@ -4,6 +4,7 @@
 
 - Add `putfo()` method, allowing one to upload a file-like object
 - Add top-level `get()` and `put()` functions for convenience
+- Increase default socket time from 5 to 10 seconds
 
 ## 0.10.2 (2015-05-15)
 
