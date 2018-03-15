@@ -83,7 +83,7 @@ class SCPClient(object):
     Since scp doesn't support symlinks, we send file symlinks as the file
     (matching scp behaviour), but we make no attempt at symlinked directories.
     """
-    def __init__(self, transport, buff_size=16384, socket_timeout=5.0,
+    def __init__(self, transport, buff_size=16384, socket_timeout=10.0,
                  progress=None, sanitize=_sh_quote):
         """
         Create an scp1 client.
