@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.11 (???)
+## 0.11.0 (2018-05-05)
 
 - Add `putfo()` method, allowing one to upload a file-like object
 - Add top-level `get()` and `put()` functions for convenience
