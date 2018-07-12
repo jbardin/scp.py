@@ -38,7 +38,7 @@ Example
     fc264c65fb17b7db5237cf7ce1780769 test2.txt
 
 Using 'with' keyword
-------------------
+--------------------
 
 ..  code-block:: python
 
