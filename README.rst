@@ -109,7 +109,11 @@ example below we print the percentage complete of the file transfer.
     ssh.connect('example.com')
 
     # Define progress callback that prints the current percentage completed for the file
-    # It prints IP address and ssh port, also.
+    def progress(filename, size, sent):
+        sys.stdout.write("%s\'s progress: %.2f%%   \r" % (filename, float(sent)/float(size)*100) )
+
+    # you can also add 4th parameter to track IP and port
+    # useful with multiple threads to track source
     def progress(filename, size, sent, peername):
         sys.stdout.write("(%s:%s) %s\'s progress: %.2f%%   \r" % (peername[0], peername[1], filename, float(sent)/float(size)*100) )
 

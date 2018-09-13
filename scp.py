@@ -120,6 +120,17 @@ class SCPClient(object):
     def __exit__(self, type, value, traceback):
         self.close()
 
+    def _progress_tracker(self, method, basename, size, file_pos, peername=""):
+        #count number of arguments
+        count = method.__code__.co_argcount
+        if count == 3:
+            method(basename, size, file_pos)
+        elif count == 4:
+            method(basename, size, file_pos, peername)
+        else:
+            #do not break, just skip
+            pass
+
     def put(self, files, remote_path=b'.',
             recursive=False, preserve_times=False):
         """
@@ -263,16 +274,16 @@ class SCPClient(object):
         if self._progress:
             if size == 0:
                 # avoid divide-by-zero
-                self._progress(basename, 1, 1, self.peername)
+                self._progress_tracker(self._progress, basename, 1, 1, self.peername)
             else:
-                self._progress(basename, size, 0, self.peername)
+                self._progress_tracker(self._progress, basename, size, 0, self.peername)
         buff_size = self.buff_size
         chan = self.channel
         while file_pos < size:
             chan.sendall(fl.read(buff_size))
             file_pos = fl.tell()
             if self._progress:
-                self._progress(basename, size, file_pos, self.peername)
+                self._progress_tracker(self._progress, basename, size, file_pos, self.peername)
         chan.sendall('\x00')
         self._recv_confirm()
 
@@ -412,9 +423,9 @@ class SCPClient(object):
         if self._progress:
             if size == 0:
                 # avoid divide-by-zero
-                self._progress(path, 1, 1, self.peername)
+                self._progress_tracker(self._progress, path, 1, 1, self.peername)
             else:
-                self._progress(path, size, 0, self.peername)
+                self._progress_tracker(self._progress, path, size, 0, self.peername)
         buff_size = self.buff_size
         pos = 0
         chan.send(b'\x00')
@@ -426,8 +437,7 @@ class SCPClient(object):
                 file_hdl.write(chan.recv(buff_size))
                 pos = file_hdl.tell()
                 if self._progress:
-                    self._progress(path, size, pos, self.peername)
-
+                    self._progress_tracker(self._progress, path, size, pos, self.peername)
             msg = chan.recv(512)
             if msg and msg[0:1] != b'\x00':
                 raise SCPException(asunicode(msg[1:]))
