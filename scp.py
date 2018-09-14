@@ -120,7 +120,7 @@ class SCPClient(object):
     def __exit__(self, type, value, traceback):
         self.close()
 
-    def _progress_tracker(self, method, basename, size, file_pos, peername=""):
+    def _progress_tracker(self, method, basename, size, file_pos, peername):
         #count number of arguments
         count = method.__code__.co_argcount
         if count == 3:
