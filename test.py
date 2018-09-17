@@ -107,8 +107,9 @@ class TestDownload(unittest.TestCase):
         previous = os.getcwd()
         os.mkdir(temp_in)
         os.chdir(temp_in)
+        cb3 = lambda filename, size, sent: None
         try:
-            with SCPClient(self.ssh.get_transport()) as scp:
+            with SCPClient(self.ssh.get_transport(), progress=cb3) as scp:
                 scp.get(filename,
                         destination if destination is not None else u'.',
                         preserve_times=True, recursive=recursive)
@@ -205,9 +206,10 @@ class TestUpload(unittest.TestCase):
         chan.exec_command(b'mkdir ' + destination)
         assert chan.recv_exit_status() == 0
         previous = os.getcwd()
+        cb4 = lambda filename, size, sent, peername: None
         try:
             os.chdir(self._temp)
-            with SCPClient(self.ssh.get_transport()) as scp:
+            with SCPClient(self.ssh.get_transport(), progress=cb4) as scp:
                 if not fl:
                     scp.put(filenames, destination, recursive)
                 else:
