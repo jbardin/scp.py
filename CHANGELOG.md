@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.12.0 (???)
+
+- Fix README.rst for PyPI
+- Add possibility of getting the peer IP and port from the `progress` callback
+- Make `putfo()` work with file-like objects that don't provide `getvalue()`
+
 ## 0.11.0 (2018-05-05)
 
 - Add `putfo()` method, allowing one to upload a file-like object
