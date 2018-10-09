@@ -167,7 +167,7 @@ class SCPClient(object):
 
         self.close()
 
-    def putfo(self, fl, remote_path, mode='0644'):
+    def putfo(self, fl, remote_path, mode='0644', size=None):
         """
         Transfer file-like object to remote host.
 
@@ -177,13 +177,21 @@ class SCPClient(object):
         @type remote_path: str
         @param mode: permissions (posix-style) for the uploaded file
         @type mode: str
+        @param size: size of the file in bytes. If ``None``, the size will be
+            computed using `seek()` and `tell()`.
         """
+        if size is None:
+            pos = fl.tell()
+            fl.seek(0, os.SEEK_END)  # Seek to end
+            size = fl.tell() - pos
+            fl.seek(pos, os.SEEK_SET)  # Seek back
+
         self.channel = self._open()
         self.channel.settimeout(self.socket_timeout)
         self.channel.exec_command(b'scp -t ' +
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
-        self._send_file(fl, remote_path, mode, size=len(fl.getvalue()))
+        self._send_file(fl, remote_path, mode, size=size)
         self.close()
 
     def get(self, remote_path, local_path='',
