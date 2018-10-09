@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.12.0 (???)
+## 0.12.0 (2018-10-09)
 
 - Fix README.rst for PyPI
 - Add possibility of getting the peer IP and port from the `progress` callback
