@@ -314,5 +314,64 @@ class TestUpAndDown(unittest.TestCase):
             os.chdir(previous)
 
 
+class TestProgressCallback(unittest.TestCase):
+    def setUp(self):
+        self.peer = ('localhost', 42345)
+        class T(object):
+            def getpeername(s):
+                return self.peer
+        self.scp = SCPClient(T())
+
+    def call_progress(self, progress):
+        self.scp._progress_tracker(progress, 'name', 100, 42, self.peer)
+
+    def test_functions(self):
+        called = [0]
+
+        def progress(name, size, pos):
+            called[0] += 1
+        self.call_progress(progress)
+        self.assertEqual(called, [1])
+
+        def progress(name, size, pos, peername):
+            called[0] += 1
+        self.call_progress(progress)
+        self.assertEqual(called, [2])
+
+    def test_methods(self):
+        called = [0]
+
+        class C(object):
+            def method3(self, name, size, pos):
+                called[0] += 1
+            def method4(self, name, size, pos, peername):
+                called[0] += 1
+            @classmethod
+            def c_method3(cls, name, size, pos):
+                called[0] += 1
+            @classmethod
+            def c_method4(cls, name, size, pos, peername):
+                called[0] += 1
+            @staticmethod
+            def s_method3(name, size, pos):
+                called[0] += 1
+            @staticmethod
+            def s_method4(name, size, pos, peername):
+                called[0] += 1
+
+        self.call_progress(C().method3)
+        self.assertEqual(called, [1])
+        self.call_progress(C().method4)
+        self.assertEqual(called, [2])
+        self.call_progress(C().c_method3)
+        self.assertEqual(called, [3])
+        self.call_progress(C().c_method4)
+        self.assertEqual(called, [4])
+        self.call_progress(C().s_method3)
+        self.assertEqual(called, [5])
+        self.call_progress(C().s_method4)
+        self.assertEqual(called, [6])
+
+
 if __name__ == '__main__':
     unittest.main()

@@ -11,6 +11,7 @@ import locale
 import os
 import re
 from socket import timeout as SocketTimeout
+import types
 
 
 # this is quote from the shlex module, added in py3.3
@@ -123,6 +124,8 @@ class SCPClient(object):
     def _progress_tracker(self, method, basename, size, file_pos, peername):
         #count number of arguments
         count = method.__code__.co_argcount
+        if isinstance(method, types.MethodType):  # instance or class method
+            count -= 1
         if count == 3:
             method(basename, size, file_pos)
         elif count == 4:
