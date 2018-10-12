@@ -122,7 +122,7 @@ class SCPClient(object):
 
     def _progress_tracker(self, method, basename, size, file_pos, peername):
         #count number of arguments
-        count = method.__code__.co_argcount
+        count = len([arg for arg in method.__code__.co_varnames if arg != 'self'])
         if count == 3:
             method(basename, size, file_pos)
         elif count == 4:
