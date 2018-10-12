@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.12.1 (2018-10-12)
+
+- Fix `progress` callback failing when it is an instance or class method
+
 ## 0.12.0 (2018-10-09)
 
 - Fix README.rst for PyPI
