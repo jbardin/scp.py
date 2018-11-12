@@ -85,7 +85,7 @@ class SCPClient(object):
     (matching scp behaviour), but we make no attempt at symlinked directories.
     """
     def __init__(self, transport, buff_size=16384, socket_timeout=10.0,
-                 progress=None, sanitize=_sh_quote):
+                 progress=None, progress4=None, sanitize=_sh_quote):
         """
         Create an scp1 client.
 
@@ -95,8 +95,10 @@ class SCPClient(object):
         @type buff_size: int
         @param socket_timeout: channel socket timeout in seconds
         @type socket_timeout: float
-        @param progress: callback - called with (filename, size, sent, peername) during
-            transfers. peername is a tuple contains (IP, PORT)
+        @param progress: callback - called with (filename, size, sent) during
+            transfers
+        @param progress4: callback - called with (filename, size, sent, peername)
+            during transfers. peername is a tuple contains (IP, PORT)
         @param sanitize: function - called with filename, should return
             safe or escaped string.  Uses _sh_quote by default.
         @type progress: function(string, int, int, tuple)
@@ -106,7 +108,14 @@ class SCPClient(object):
         self.socket_timeout = socket_timeout
         self.channel = None
         self.preserve_times = False
-        self._progress = progress
+        if progress is not None and progress4 is not None:
+            raise TypeError("You may only set one of progress, progress4")
+        elif progress4 is not None:
+            self._progress = progress4
+        elif progress is not None:
+            self._progress = lambda *a: progress(*a[:3])
+        else:
+            self._progress = None
         self._recv_dir = b''
         self._rename = False
         self._utime = None
@@ -120,19 +129,6 @@ class SCPClient(object):
 
     def __exit__(self, type, value, traceback):
         self.close()
-
-    def _progress_tracker(self, method, basename, size, file_pos, peername):
-        #count number of arguments
-        count = method.__code__.co_argcount
-        if isinstance(method, types.MethodType):  # instance or class method
-            count -= 1
-        if count == 3:
-            method(basename, size, file_pos)
-        elif count == 4:
-            method(basename, size, file_pos, peername)
-        else:
-            #do not break, just skip
-            pass
 
     def put(self, files, remote_path=b'.',
             recursive=False, preserve_times=False):
@@ -285,16 +281,16 @@ class SCPClient(object):
         if self._progress:
             if size == 0:
                 # avoid divide-by-zero
-                self._progress_tracker(self._progress, basename, 1, 1, self.peername)
+                self._progress(basename, 1, 1, self.peername)
             else:
-                self._progress_tracker(self._progress, basename, size, 0, self.peername)
+                self._progress(basename, size, 0, self.peername)
         buff_size = self.buff_size
         chan = self.channel
         while file_pos < size:
             chan.sendall(fl.read(buff_size))
             file_pos = fl.tell()
             if self._progress:
-                self._progress_tracker(self._progress, basename, size, file_pos, self.peername)
+                self._progress(basename, size, file_pos, self.peername)
         chan.sendall('\x00')
         self._recv_confirm()
 
@@ -434,9 +430,9 @@ class SCPClient(object):
         if self._progress:
             if size == 0:
                 # avoid divide-by-zero
-                self._progress_tracker(self._progress, path, 1, 1, self.peername)
+                self._progress(path, 1, 1, self.peername)
             else:
-                self._progress_tracker(self._progress, path, size, 0, self.peername)
+                self._progress(path, size, 0, self.peername)
         buff_size = self.buff_size
         pos = 0
         chan.send(b'\x00')
@@ -448,7 +444,7 @@ class SCPClient(object):
                 file_hdl.write(chan.recv(buff_size))
                 pos = file_hdl.tell()
                 if self._progress:
-                    self._progress_tracker(self._progress, path, size, pos, self.peername)
+                    self._progress(path, size, pos, self.peername)
             msg = chan.recv(512)
             if msg and msg[0:1] != b'\x00':
                 raise SCPException(asunicode(msg[1:]))
