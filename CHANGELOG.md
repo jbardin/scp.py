@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.13.0 (2018-11-12)
+
+- Remove all introspection logic for `progress` callback introduced in 0.12
+- `progress` callback only accept 3 arguments again
+- Introduce `progress4` parameter which accepts the peername as 4th argument
+
 ## 0.12.1 (2018-10-12)
 
 - Fix `progress` callback failing when it is an instance or class method

@@ -10,7 +10,7 @@ with io.open('README.rst', encoding='utf-8') as fp:
     description = fp.read()
 setup(
         name = 'scp',
-        version = '0.12.1',
+        version = '0.13.0',
         author = 'James Bardin',
         author_email = 'j.bardin@gmail.com',
         license = 'LGPL',
