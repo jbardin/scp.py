@@ -355,9 +355,9 @@ class SCPClient(object):
         except SocketTimeout:
             raise SCPException('Timeout waiting for scp response')
         # slice off the first byte, so this compare will work in py2 and py3
-        if msg and msg[0:1] == b'\x00':
+        if msg and type(msg) == bytes and (repr(str(msg).startswith('\x00')) or repr(str(msg).endswith('\x00'))):
             return
-        elif msg and msg[0:1] == b'\x01':
+        elif msg and type(msg) == bytes and repr(str(msg).startswith('\x01')):
             raise SCPException(asunicode(msg[1:]))
         elif self.channel.recv_stderr_ready():
             msg = self.channel.recv_stderr(512)
