@@ -354,10 +354,11 @@ class SCPClient(object):
             msg = self.channel.recv(512)
         except SocketTimeout:
             raise SCPException('Timeout waiting for scp response')
-        # slice off the first byte, so this compare will work in py2 and py3
-        if msg and type(msg) == bytes and (repr(str(msg).startswith('\x00')) or repr(str(msg).endswith('\x00'))):
+        # use slicing instead of indexing, so this works in both py2 and py3
+        # some Cisco devices put the null character at the end, look there too
+        if msg and (msg[0:1] == b'\x00' or msg[-1:] == b'\x00'):
             return
-        elif msg and type(msg) == bytes and repr(str(msg).startswith('\x01')):
+        elif msg and msg[0:1] == b'\x01':
             raise SCPException(asunicode(msg[1:]))
         elif self.channel.recv_stderr_ready():
             msg = self.channel.recv_stderr(512)
