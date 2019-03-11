@@ -410,11 +410,13 @@ class SCPClient(object):
                 path = self._recv_dir
                 self._rename = False
             elif os.name == 'nt':
-                path = os.path.join(asunicode_win(self._recv_dir),
-                                    parts[2].decode('utf-8'))
+                name = parts[2].decode('utf-8')
+                assert not os.path.isabs(name)
+                path = os.path.join(asunicode_win(self._recv_dir), name)
             else:
-                path = os.path.join(asbytes(self._recv_dir),
-                                    parts[2])
+                name = parts[2]
+                assert not os.path.isabs(name)
+                path = os.path.join(asbytes(self._recv_dir), name)
         except:
             chan.send('\x01')
             chan.close()
@@ -470,11 +472,13 @@ class SCPClient(object):
                 path = self._recv_dir
                 self._rename = False
             elif os.name == 'nt':
-                path = os.path.join(asunicode_win(self._recv_dir),
-                                    parts[2].decode('utf-8'))
+                name = parts[2].decode('utf-8')
+                assert not os.path.isabs(name)
+                path = os.path.join(asunicode_win(self._recv_dir), name)
             else:
-                path = os.path.join(asbytes(self._recv_dir),
-                                    parts[2])
+                name = parts[2]
+                assert not os.path.isabs(name)
+                path = os.path.join(asbytes(self._recv_dir), name)
         except:
             self.channel.send(b'\x01')
             raise SCPException('Bad directory format')
