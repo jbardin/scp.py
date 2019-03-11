@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.1 (???)
+
+- Guard against some malformed messages from the server
+
 ## 0.13.0 (2018-11-12)
 
 - Remove all introspection logic for `progress` callback introduced in 0.12
