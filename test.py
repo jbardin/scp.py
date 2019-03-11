@@ -309,7 +309,8 @@ class TestUpAndDown(unittest.TestCase):
             put(self.ssh.get_transport(), testfile, testfile_sent)
             get(self.ssh.get_transport(), testfile_sent, testfile_rcvd)
 
-            assert open(testfile_rcvd).read() == 'TESTING\n'
+            with open(testfile_rcvd) as f:
+                self.assertEqual(f.read(), 'TESTING\n')
         finally:
             os.chdir(previous)
 
