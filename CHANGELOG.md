@@ -1,6 +1,6 @@
 # Changelog
 
-## 0.13.1 (???)
+## 0.13.1 (2019-03-11)
 
 - Guard against some malformed messages from the server
 
