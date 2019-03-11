@@ -117,6 +117,7 @@ class SCPClient(object):
         else:
             self._progress = None
         self._recv_dir = b''
+        self._depth = 0
         self._rename = False
         self._utime = None
         self.sanitize = sanitize
@@ -214,6 +215,7 @@ class SCPClient(object):
             remote_path = [remote_path]
         remote_path = [self.sanitize(asbytes(r)) for r in remote_path]
         self._recv_dir = local_path or os.getcwd()
+        self._depth = 0
         self._rename = (len(remote_path) == 1 and
                         not os.path.isdir(os.path.abspath(local_path)))
         if len(remote_path) > 1:
@@ -475,10 +477,12 @@ class SCPClient(object):
                 name = parts[2].decode('utf-8')
                 assert not os.path.isabs(name)
                 path = os.path.join(asunicode_win(self._recv_dir), name)
+                self._depth += 1
             else:
                 name = parts[2]
                 assert not os.path.isabs(name)
                 path = os.path.join(asbytes(self._recv_dir), name)
+                self._depth += 1
         except:
             self.channel.send(b'\x01')
             raise SCPException('Bad directory format')
@@ -497,6 +501,8 @@ class SCPClient(object):
             raise
 
     def _recv_popd(self, *cmd):
+        assert self._depth > 0
+        self._depth -= 1
         self._recv_dir = os.path.split(self._recv_dir)[0]
 
     def _set_dirtimes(self):
