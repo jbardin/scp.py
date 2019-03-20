@@ -159,6 +159,11 @@ class TestDownload(unittest.TestCase):
                             u'bien rang\xE9\\b\xE8te'],
                            [b'bien rang\xC3\xA9', b'bien rang\xC3\xA9/file',
                             b'bien rang\xC3\xA9/b\xC3\xA8te'])
+        self.download_test(b'/tmp/bien rang\xC3\xA9', True, b'target',
+                           [u'target', u'target\\file',
+                            u'target\\b\xE8te'],
+                           [b'target', b'target/file',
+                            b'target/b\xC3\xA8te'])
 
     def test_get_invalid_unicode(self):
         self.download_test(b'/tmp/p\xE9t\xE9', False, u'target',

@@ -501,9 +501,9 @@ class SCPClient(object):
             raise
 
     def _recv_popd(self, *cmd):
-        assert self._depth > 0
-        self._depth -= 1
-        self._recv_dir = os.path.split(self._recv_dir)[0]
+        if self._depth > 0:
+            self._depth -= 1
+            self._recv_dir = os.path.split(self._recv_dir)[0]
 
     def _set_dirtimes(self):
         try:
