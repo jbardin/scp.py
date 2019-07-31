@@ -267,7 +267,7 @@ class SCPClient(object):
             (mode, size, mtime, atime) = self._read_stats(name)
             if self.preserve_times:
                 self._send_time(mtime, atime)
-            fl = open(name, 'rb')
+            fl = self._open_file(name, 'rb')
             self._send_file(fl, name, mode, size)
             fl.close()
 
@@ -425,7 +425,7 @@ class SCPClient(object):
             raise SCPException('Bad file format')
 
         try:
-            file_hdl = open(path, 'wb')
+            file_hdl = self._open_file(path, 'wb')
         except IOError as e:
             chan.send(b'\x01' + str(e).encode('utf-8'))
             chan.close()
@@ -511,6 +511,15 @@ class SCPClient(object):
                 os.utime(d, self._dirtimes[d])
         finally:
             self._dirtimes = {}
+
+    def _open_file(self, name, mode):
+        """Open a local file.
+
+        @param name: Path to the local file
+        @param mode: Either 'rb' (read the file to send it) or 'wb' (write the
+        received file).
+        """
+        return open(name, mode)
 
 
 class SCPException(Exception):
