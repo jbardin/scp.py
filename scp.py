@@ -501,7 +501,7 @@ class SCPClient(object):
             raise
 
     def _recv_popd(self, *cmd):
-        if self._depth > 0:
+        if self._depth > 0:  # TODO: Replace with a list of local CDs
             self._depth -= 1
             self._recv_dir = os.path.split(self._recv_dir)[0]
 
