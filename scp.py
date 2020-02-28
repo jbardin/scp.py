@@ -24,10 +24,14 @@ def _sh_quote(s):
     r"""Given bl"a, returns "bl\\"a".
     """
     if not s or any(c not in safe_shell_chars for c in s):
-        return b'"%s"' % (s.replace(b'\\', b'\\\\')
-                           .replace(b'"', b'\\"')
-                           .replace(b'`', b'\\`')
-                           .replace(b'$', b'\\$'))
+        return (
+            b'"' +
+            s.replace(b'\\', b'\\\\')
+              .replace(b'"', b'\\"')
+              .replace(b'`', b'\\`')
+              .replace(b'$', b'\\$') +
+            b'"'
+        )
     else:
         return s
 
