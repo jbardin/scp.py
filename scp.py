@@ -447,7 +447,7 @@ class SCPClient(object):
                     buff_size = size - pos
                 data = chan.recv(buff_size)
                 if not data:
-                    raise SocketTimeout("Underlying channel was closed")
+                    raise SCPException("Underlying channel was closed")
                 file_hdl.write(data)
                 pos = file_hdl.tell()
                 if self._progress:
