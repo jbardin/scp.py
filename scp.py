@@ -445,7 +445,10 @@ class SCPClient(object):
                 # we have to make sure we don't read the final byte
                 if size - pos <= buff_size:
                     buff_size = size - pos
-                file_hdl.write(chan.recv(buff_size))
+		data = chan.recv(buff_size)
+                if not data:
+                    raise SocketTimeout("Underlying channel was closed")
+                file_hdl.write(data)
                 pos = file_hdl.tell()
                 if self._progress:
                     self._progress(path, size, pos, self.peername)
