@@ -5,7 +5,7 @@
 Utilities for sending files over ssh using the scp1 protocol.
 """
 
-__version__ = '0.13.2'
+__version__ = '0.13.3'
 
 import locale
 import os

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.3 (2020-10-26)
+
+- Fix hanging when underlying paramiko channel is closed
+
 ## 0.13.2 (2019-03-19)
 
 - Fix AssertionError in recursive get() when `_rename` is set and server sends a POPD at the end (`_depth > 0`)
