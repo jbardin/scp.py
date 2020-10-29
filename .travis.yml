@@ -1,16 +1,14 @@
 language: python
 python:
-  - "2.7"
-  - "3.4"
   - "3.5"
   - "3.6"
   - "3.7"
+  - "3.8"
 install:
   - pip install readme_renderer
   - .travis/setup_ssh.sh
   - sudo apt-get update -qq
   - sudo apt-get install -qq openssh-client openssh-server
-  - if [[ $TRAVIS_PYTHON_VERSION == 2.6 ]]; then pip install unittest2; fi
   - python setup.py install
 script:
   - SCPPY_PORT=10022 python test.py
