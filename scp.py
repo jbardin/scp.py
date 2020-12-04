@@ -14,20 +14,24 @@ from socket import timeout as SocketTimeout
 import types
 
 
-# this is quote from the shlex module, added in py3.3
-_find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
+# Based on POSIX:
+# https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html
+_find_unsafe = re.compile(br'[[\s\'|&;<>()$\"*?#~=%]').search
 
 
 def _sh_quote(s):
-    """Return a shell-escaped version of the string `s`."""
+    """Return a POSIX shell-escaped version of the string `s`."""
     if not s:
         return b""
     if _find_unsafe(s) is None:
         return s
 
-    # use single quotes, and put single quotes into double quotes
-    # the string $'b is then quoted as '$'"'"'b'
-    return b"'" + s.replace(b"'", b"'\"'\"'") + b"'"
+    # For maximal portability with Windows use double-quotes not single-
+    # quotes, and only escape the characters that are absolutely necessary.
+    # Note this does not provide 100% compatibility with Windows: if you need
+    # POSIX special characters $ or ` in your Windows path you'll need to
+    # provide your own sanitizer function.
+    return b'"' + re.sub(br'([$`"\n])', br'\\\1', s) + b'"'
 
 
 # Unicode conversion functions; assume UTF-8
