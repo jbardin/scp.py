@@ -80,6 +80,7 @@ class TestDownload(unittest.TestCase):
             b'/tmp/r\\xC3\\xA9mi\\x00'
             b'/tmp/bien rang\\xC3\\xA9/file\\x00'
             b'/tmp/bien rang\\xC3\\xA9/b\\xC3\\xA8te\\x00'
+            b'/tmp/bien rang\\xC3\\xA9/h\\q\\$l\\`l\\"o\\x00'
             b'/tmp/p\\xE9t\\xE9'  # invalid UTF-8 here
             b'" | xargs -0 touch; '
             b'fi')
@@ -158,12 +159,13 @@ class TestDownload(unittest.TestCase):
                            [u'bien rang\xE9', u'bien rang\xE9\\file',
                             u'bien rang\xE9\\b\xE8te'],
                            [b'bien rang\xC3\xA9', b'bien rang\xC3\xA9/file',
-                            b'bien rang\xC3\xA9/b\xC3\xA8te'])
+                            b'bien rang\xC3\xA9/b\xC3\xA8te',
+                            b'bien rang\xC3\xA9/h\\q$l`l"o'])
         self.download_test(b'/tmp/bien rang\xC3\xA9', True, b'target',
                            [u'target', u'target\\file',
                             u'target\\b\xE8te'],
                            [b'target', b'target/file',
-                            b'target/b\xC3\xA8te'])
+                            b'target/b\xC3\xA8te', b'target/h\\q$l`l"o'])
 
     def test_get_invalid_unicode(self):
         self.download_test(b'/tmp/p\xE9t\xE9', False, u'target',

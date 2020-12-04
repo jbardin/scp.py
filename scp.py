@@ -16,7 +16,7 @@ import types
 
 # Based on POSIX:
 # https://pubs.opengroup.org/onlinepubs/9699919799/utilities/V3_chap02.html
-_find_unsafe = re.compile(br'[[\s\'|&;<>()$\"*?#~=%]').search
+_find_unsafe = re.compile(br'[\[\s\'|&;<>()$\\"*?#~=%]').search
 
 
 def _sh_quote(s):
@@ -31,7 +31,14 @@ def _sh_quote(s):
     # Note this does not provide 100% compatibility with Windows: if you need
     # POSIX special characters $ or ` in your Windows path you'll need to
     # provide your own sanitizer function.
-    return b'"' + re.sub(br'([$`"\n])', br'\\\1', s) + b'"'
+
+    # Take a match where group 1 is 0 or more backslashes and group 2 is a
+    # special character.  The result is the backslashes escaped, plus one
+    # backslash to escape the special character and the special character.
+    def esc(m):
+        return m.group(1) + m.group(1) + b'\\' + m.group(2)
+
+    return b'"' + re.sub(br'(\\*)([$`"\n])', esc, s) + b'"'
 
 
 # Unicode conversion functions; assume UTF-8
