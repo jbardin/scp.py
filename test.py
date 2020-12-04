@@ -165,7 +165,7 @@ class TestDownload(unittest.TestCase):
                            [u'target', u'target\\file',
                             u'target\\b\xE8te'],
                            [b'target', b'target/file',
-                            b'target/b\xC3\xA8te', b'target/h\\q$l`l"o'])
+                            b'target/b\xC3\xA8te', br'target/h\q$l`l"o'])
 
     def test_get_invalid_unicode(self):
         self.download_test(b'/tmp/p\xE9t\xE9', False, u'target',
