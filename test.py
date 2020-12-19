@@ -319,6 +319,24 @@ class TestUpAndDown(unittest.TestCase):
         finally:
             os.chdir(previous)
 
+    def test_up_and_down_with_limit(self):
+        '''send and receive files with the same client'''
+        previous = os.getcwd()
+        testfile = os.path.join(self._temp, 'testfile')
+        testfile_sent = os.path.join(self._temp, 'testfile_sent')
+        testfile_rcvd = os.path.join(self._temp, 'testfile_rcvd')
+        try:
+            os.chdir(self._temp)
+            with open(testfile, 'w') as f:
+                f.write("TESTING\n")
+            with SCPClient(self.ssh.get_transport(), socket_timeout=60.0) as scp:
+                scp.put(testfile, testfile_sent, limit_bandwidth=10)
+                scp.get(testfile_sent, testfile_rcvd, limit_bandwidth=10)
+
+            assert open(testfile_rcvd).read() == 'TESTING\n'
+        finally:
+            os.chdir(previous)
+
 
 if __name__ == '__main__':
     unittest.main()

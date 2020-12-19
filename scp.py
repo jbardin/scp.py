@@ -132,7 +132,7 @@ class SCPClient(object):
         self.close()
 
     def put(self, files, remote_path=b'.',
-            recursive=False, preserve_times=False):
+            recursive=False, preserve_times=False, limit_bandwidth=0):
         """
         Transfer files and directories to remote host.
 
@@ -147,12 +147,17 @@ class SCPClient(object):
         @param preserve_times: preserve mtime and atime of transferred files
             and directories.
         @type preserve_times: bool
+        @param limit_bandwidth: Limits the used bandwidth, specified in Kbit/s.
+        @type limit_bandwidth: int
         """
         self.preserve_times = preserve_times
         self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
-        scp_command = (b'scp -t ', b'scp -r -t ')[recursive]
+        scp_command = b'scp -t '
+        scp_command += (b'', b' -r ')[recursive]
+        if limit_bandwidth > 0:
+            scp_command += b' -l ' + str(limit_bandwidth).encode() + b' '
         self.channel.exec_command(scp_command +
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
@@ -195,7 +200,7 @@ class SCPClient(object):
         self.close()
 
     def get(self, remote_path, local_path='',
-            recursive=False, preserve_times=False):
+            recursive=False, preserve_times=False, limit_bandwidth=0):
         """
         Transfer files and directories from remote host to localhost.
 
@@ -210,6 +215,8 @@ class SCPClient(object):
         @param preserve_times: preserve mtime and atime of transferred files
             and directories.
         @type preserve_times: bool
+        @param limit_bandwidth: Limits the used bandwidth, specified in Kbit/s.
+        @type limit_bandwidth: int
         """
         if not isinstance(remote_path, (list, tuple)):
             remote_path = [remote_path]
@@ -227,12 +234,14 @@ class SCPClient(object):
                                    asunicode(self._recv_dir))
         rcsv = (b'', b' -r')[recursive]
         prsv = (b'', b' -p')[preserve_times]
+        lmbw = (b'', b' -l '+ str(limit_bandwidth).encode())[limit_bandwidth > 0]
         self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
         self.channel.exec_command(b"scp" +
                                   rcsv +
                                   prsv +
+                                  lmbw +
                                   b" -f " +
                                   b' '.join(remote_path))
         self._recv_all()
