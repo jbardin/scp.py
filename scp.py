@@ -17,8 +17,8 @@ import types
 # this is quote from the shlex module, added in py3.3
 _find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
 
-
 SCP_COMMAND = b'scp '
+
 
 def _sh_quote(s):
     """Return a shell-escaped version of the string `s`."""
