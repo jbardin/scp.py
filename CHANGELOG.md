@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.4 (2021-06-08)
+
+- Add `scp_command` attribute, allowing changing the command run on the server (for example to `sudo scp`)
+
 ## 0.13.3 (2020-10-26)
 
 - Fix hanging when underlying paramiko channel is closed
