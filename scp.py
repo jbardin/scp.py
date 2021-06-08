@@ -17,6 +17,8 @@ import types
 # this is quote from the shlex module, added in py3.3
 _find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
 
+SCP_COMMAND = b'scp'
+
 
 def _sh_quote(s):
     """Return a shell-escaped version of the string `s`."""
@@ -123,6 +125,7 @@ class SCPClient(object):
         self.sanitize = sanitize
         self._dirtimes = {}
         self.peername = self.transport.getpeername()
+        self.scp_command = SCP_COMMAND
 
     def __enter__(self):
         self.channel = self._open()
@@ -152,7 +155,7 @@ class SCPClient(object):
         self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
-        scp_command = (b'scp -t ', b'scp -r -t ')[recursive]
+        scp_command = self.scp_command + b' ' + (b'-t ', b'-r -t ')[recursive]
         self.channel.exec_command(scp_command +
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
@@ -188,7 +191,7 @@ class SCPClient(object):
 
         self.channel = self._open()
         self.channel.settimeout(self.socket_timeout)
-        self.channel.exec_command(b'scp -t ' +
+        self.channel.exec_command(self.scp_command + b' -t ' +
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
         self._send_file(fl, remote_path, mode, size=size)
@@ -230,7 +233,7 @@ class SCPClient(object):
         self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
-        self.channel.exec_command(b"scp" +
+        self.channel.exec_command(self.scp_command + b' ' +
                                   rcsv +
                                   prsv +
                                   b" -f " +
