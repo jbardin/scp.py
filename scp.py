@@ -233,7 +233,7 @@ class SCPClient(object):
         self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
-        self.channel.exec_command(self.scp_command + b' ' +
+        self.channel.exec_command(self.scp_command +
                                   rcsv +
                                   prsv +
                                   b" -f " +
