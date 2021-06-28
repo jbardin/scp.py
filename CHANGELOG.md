@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.5 (2021-06-28)
+
+- Fix extra space sent in SSH command-line for `get()`, causing issues on some servers
+
 ## 0.13.4 (2021-06-08)
 
 - Add `scp_command` attribute, allowing changing the command run on the server (for example to `sudo scp`)
