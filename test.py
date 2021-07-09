@@ -255,6 +255,10 @@ class TestUpload(unittest.TestCase):
                          [b'dossi\xC3\xA9',
                           b'dossi\xC3\xA9/bien rang\xC3\xA9',
                           b'dossi\xC3\xA9/bien rang\xC3\xA9/test'])
+        # Again, with trailing slash
+        self.upload_test(b'cl\xC3\xA9/dossi\xC3\xA9/', True,
+                         [b'bien rang\xC3\xA9',
+                          b'bien rang\xC3\xA9/test'])
 
     def test_put_unicode(self):
         self.upload_test(u'cl\xE9/r\xE9mi', False, [b'r\xC3\xA9mi'])

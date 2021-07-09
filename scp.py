@@ -326,7 +326,8 @@ class SCPClient(object):
                 continue
             last_dir = asbytes(base)
             for root, dirs, fls in os.walk(base):
-                self._chdir(last_dir, asbytes(root))
+                if not asbytes(root).endswith(b'/'):
+                    self._chdir(last_dir, asbytes(root))
                 self._send_files([os.path.join(root, f) for f in fls])
                 last_dir = asbytes(root)
             # back out of the directory
