@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.13.6 (2021-07-09)
+
+- Fix put when the source directory has a trailing slash. It will now work similarly to rsync, copying the contents of the directory.
+
 ## 0.13.5 (2021-06-28)
 
 - Fix extra space sent in SSH command-line for `get()`, causing issues on some servers
