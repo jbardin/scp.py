@@ -160,8 +160,8 @@ class SCPClient(object):
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
 
-        if not isinstance(files, (list, tuple)):
-            files = list(files)
+        if not isinstance(files, (list, tuple, types.GeneratorType)):
+            files = [files]
 
         if recursive:
             self._send_recursive(files)
