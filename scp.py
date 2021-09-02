@@ -161,7 +161,7 @@ class SCPClient(object):
         self._recv_confirm()
 
         if not isinstance(files, (list, tuple)):
-            files = [files]
+            files = list(files)
 
         if recursive:
             self._send_recursive(files)
