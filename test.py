@@ -14,6 +14,10 @@ try:
     sys.modules['unittest'] = unittest
 except ImportError:
     import unittest
+try:
+    import pathlib
+except ImportError:
+    pathlib = None
 
 
 ssh_info = {
@@ -286,6 +290,13 @@ class TestUpload(unittest.TestCase):
                           b'dossi\xC3\xA9/bien rang\xC3\xA9',
                           b'dossi\xC3\xA9/bien rang\xC3\xA9/test',
                           b'r\xC3\xA9mi'])
+
+    @unittest.skipUnless(pathlib, "pathlib not available")
+    def test_pathlib(self):
+        self.upload_test(pathlib.Path(u'cl\xE9/dossi\xE9'), True,
+                         [b'dossi\xC3\xA9',
+                          b'dossi\xC3\xA9/bien rang\xC3\xA9',
+                          b'dossi\xC3\xA9/bien rang\xC3\xA9/test'])
 
     def test_putfo(self):
         fl = BytesIO()
