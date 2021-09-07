@@ -11,7 +11,6 @@ import locale
 import os
 import re
 from socket import timeout as SocketTimeout
-import types
 
 
 # this is quote from the shlex module, added in py3.3
