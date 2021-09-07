@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.0 (2021-09-07)
+
+- Accept iterables other than list and tuple in `get()` and `put()`
+- Accept `pathlib.Path` objects
+
 ## 0.13.6 (2021-07-09)
 
 - Fix put when the source directory has a trailing slash. It will now work similarly to rsync, copying the contents of the directory.
