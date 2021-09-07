@@ -49,6 +49,8 @@ def asbytes(s):
     """
     if isinstance(s, bytes):
         return s
+    elif pathlib and isinstance(s, pathlib.Path):
+        return bytes(s)
     else:
         return s.encode('utf-8')
 
@@ -332,6 +334,7 @@ class SCPClient(object):
 
     def _send_recursive(self, files):
         for base in files:
+            base = asbytes(base)
             if not os.path.isdir(base):
                 # filename mixed into the bunch
                 self._send_files([base])
