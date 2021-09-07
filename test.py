@@ -8,6 +8,7 @@ import shutil
 import sys
 from scp import SCPClient, SCPException, put, get
 import tempfile
+import types
 try:
     import unittest2 as unittest
     sys.modules['unittest'] = unittest
@@ -270,6 +271,12 @@ class TestUpload(unittest.TestCase):
                           b'dossi\xC3\xA9/bien rang\xC3\xA9/test'])
         self.upload_test([u'cl\xE9/dossi\xE9/bien rang\xE9',
                           u'cl\xE9/r\xE9mi'], True,
+                         [b'bien rang\xC3\xA9',
+                          b'bien rang\xC3\xA9/test',
+                          b'r\xC3\xA9mi'])
+        g = (n for n in (u'cl\xE9/dossi\xE9/bien rang\xE9', u'cl\xE9/r\xE9mi'))
+        assert isinstance(g, types.GeneratorType)
+        self.upload_test(g, True,
                          [b'bien rang\xC3\xA9',
                           b'bien rang\xC3\xA9/test',
                           b'r\xC3\xA9mi'])
