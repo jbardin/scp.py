@@ -18,6 +18,15 @@ _find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
 
 SCP_COMMAND = b'scp'
 
+PATH_TYPES = (str, bytes)
+
+try:
+    import pathlib
+except ImportError:
+    pass
+else:
+    PATH_TYPES += pathlib.PurePath,
+
 
 def _sh_quote(s):
     """Return a shell-escaped version of the string `s`."""
@@ -159,8 +168,10 @@ class SCPClient(object):
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
 
-        if not isinstance(files, (list, tuple)):
+        if isinstance(files, PATH_TYPES):
             files = [files]
+        else:
+            files = list(files)
 
         if recursive:
             self._send_recursive(files)
@@ -213,8 +224,10 @@ class SCPClient(object):
             and directories.
         @type preserve_times: bool
         """
-        if not isinstance(remote_path, (list, tuple)):
+        if isinstance(remote_path, PATH_TYPES):
             remote_path = [remote_path]
+        else:
+            remote_path = list(remote_path)
         remote_path = [self.sanitize(asbytes(r)) for r in remote_path]
         self._recv_dir = local_path or os.getcwd()
         self._depth = 0
