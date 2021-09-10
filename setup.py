@@ -13,6 +13,8 @@ setup(
         version = '0.14.0',
         author = 'James Bardin',
         author_email = 'j.bardin@gmail.com',
+        maintainer="Remi Rampin",
+        maintainer_email='remi@rampin.org',
         license = 'LGPL-2.1-or-later',
         url = 'https://github.com/jbardin/scp.py',
         description='scp module for paramiko',
