@@ -26,6 +26,10 @@ except ImportError:
     pathlib = None
 else:
     PATH_TYPES += pathlib.PurePath,
+try:
+    PATH_TYPES += unicode,
+except NameError:
+    pass
 
 
 def _sh_quote(s):
