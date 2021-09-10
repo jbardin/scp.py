@@ -9,6 +9,7 @@ jobs:
     strategy:
       matrix:
         python-version:
+          - "2.7"
           - "3.5"
           - "3.7"
           - "3.8"
