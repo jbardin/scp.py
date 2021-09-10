@@ -23,7 +23,7 @@ PATH_TYPES = (str, bytes)
 try:
     import pathlib
 except ImportError:
-    pass
+    pathlib = None
 else:
     PATH_TYPES += pathlib.PurePath,
 
