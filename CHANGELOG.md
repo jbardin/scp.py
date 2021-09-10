@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.1 (2021-09-10)
+
+- Don't fail if 'pathlib' doesn't import (Python 2)
+- Accept 'unicode' objects as paths (Python 2)
+
 ## 0.14.0 (2021-09-07)
 
 - Accept iterables other than list and tuple in `get()` and `put()`
