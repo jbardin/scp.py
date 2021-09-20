@@ -402,7 +402,7 @@ class SCPClient(object):
             # wait for command as long as we're open
             self.channel.sendall('\x00')
             msg = self.channel.recv(1024)
-            if not msg:  # chan closed while recving
+            if not msg:  # chan closed while receiving
                 break
             assert msg[-1:] == b'\n'
             msg = msg[:-1]
