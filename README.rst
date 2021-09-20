@@ -1,7 +1,7 @@
 Pure python scp module
 ======================
 
-The scp.py module uses a paramiko transport to send and recieve files via the
+The scp.py module uses a paramiko transport to send and receive files via the
 scp1 protocol. This is the protocol as referenced from the openssh scp program,
 and has only been tested with this implementation.
 
