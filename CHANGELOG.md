@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.2 (2021-12-15)
+
+- Don't fail if the remote path is a PurePath not a Path
+
 ## 0.14.1 (2021-09-10)
 
 - Don't fail if 'pathlib' doesn't import (Python 2)
