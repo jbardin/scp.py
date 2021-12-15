@@ -53,7 +53,7 @@ def asbytes(s):
     """
     if isinstance(s, bytes):
         return s
-    elif pathlib and isinstance(s, pathlib.Path):
+    elif pathlib and isinstance(s, pathlib.PurePath):
         return bytes(s)
     else:
         return s.encode('utf-8')
