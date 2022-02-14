@@ -9,11 +9,8 @@ import sys
 from scp import SCPClient, SCPException, put, get
 import tempfile
 import types
-try:
-    import unittest2 as unittest
-    sys.modules['unittest'] = unittest
-except ImportError:
-    import unittest
+import unittest
+
 try:
     import pathlib
 except ImportError:
