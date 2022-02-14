@@ -12,14 +12,6 @@ import os
 import re
 from socket import timeout as SocketTimeout
 
-from typing import IO, TYPE_CHECKING, AnyStr, Callable, Iterable, Optional, Tuple, TypeVar, Union
-
-if TYPE_CHECKING:
-    import paramiko.transport
-
-# unconditionally adding pathlib here because typing only works in python3 anyways and it's in stdlib
-PathTypes = TypeVar('PathTypes', str, bytes, "pathlib.PurePath")
-
 # this is quote from the shlex module, added in py3.3
 _find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
 
@@ -36,6 +28,17 @@ else:
 try:
     PATH_TYPES += unicode,
 except NameError:
+    pass
+
+try:
+    from typing import IO, TYPE_CHECKING, AnyStr, Callable, Iterable, Optional, Tuple, TypeVar, Union
+
+    if TYPE_CHECKING:
+        import paramiko.transport
+
+    # unconditionally adding pathlib here because typing only works in python3 anyways and it's in stdlib
+    PathTypes = TypeVar('PathTypes', str, bytes, "pathlib.PurePath")
+except ImportError:
     pass
 
 
@@ -107,15 +110,9 @@ class SCPClient(object):
     Since scp doesn't support symlinks, we send file symlinks as the file
     (matching scp behaviour), but we make no attempt at symlinked directories.
     """
-    def __init__(
-        self, 
-        transport: "paramiko.transport.Transport", 
-        buff_size: int = 16384, 
-        socket_timeout: float = 10.0,
-        progress: Optional[Callable[[bytes, int, int], None]]=None, 
-        progress4: Optional[Callable[[bytes, int, int, Tuple[str, int]], None]]=None, 
-        sanitize: Callable[[bytes], bytes] = _sh_quote,
-    ):
+    def __init__(self, transport, buff_size=16384, socket_timeout=10.0,
+                 progress=None, progress4=None, sanitize=_sh_quote):
+        # type: (paramiko.transport.Transport, int, float, Optional[Callable[[bytes, int, int], None]], Optional[Callable[[bytes, int, int, Tuple[str, int]], None]], Callable[[bytes], bytes]) -> None
         """
         Create an scp1 client.
 
@@ -162,13 +159,9 @@ class SCPClient(object):
     def __exit__(self, type, value, traceback):
         self.close()
 
-    def put(
-        self,
-        files: Union[PathTypes, Iterable[PathTypes]], 
-        remote_path: AnyStr = b'.',
-        recursive: bool = False, 
-        preserve_times: bool = False,
-    ):
+    def put(self, files, remote_path=b'.',
+            recursive=False, preserve_times=False):
+        # type: (Union[PathTypes, Iterable[PathTypes]], AnyStr, bool, bool) -> None
         """
         Transfer files and directories to remote host.
 
@@ -205,13 +198,8 @@ class SCPClient(object):
 
         self.close()
 
-    def putfo(
-        self, 
-        fl: IO[AnyStr], 
-        remote_path: AnyStr, 
-        mode: AnyStr = '0644', 
-        size: Optional[int] = None,
-    ):
+    def putfo(self, fl, remote_path, mode='0644', size=None):
+        # type: (IO[AnyStr], AnyStr, AnyStr, Optional[int]) -> None
         """
         Transfer file-like object to remote host.
 
@@ -238,13 +226,9 @@ class SCPClient(object):
         self._send_file(fl, remote_path, mode, size=size)
         self.close()
 
-    def get(
-        self,
-        remote_path: PathTypes,
-        local_path: AnyStr = '',
-        recursive: bool = False,
-        preserve_times: bool = False,
-    ):
+    def get(self, remote_path, local_path='',
+            recursive=False, preserve_times=False):
+        # type: (PathTypes, AnyStr, bool, bool) -> None
         """
         Transfer files and directories from remote host to localhost.
 
@@ -574,13 +558,9 @@ class SCPException(Exception):
     pass
 
 
-def put(
-    transport: "paramiko.transport.Transport", 
-    files: Union[PathTypes, Iterable[PathTypes]],
-    remote_path: AnyStr = b'.',
-    recursive: bool = False, 
-    preserve_times: bool = False,
-):
+def put(transport, files, remote_path=b'.',
+        recursive=False, preserve_times=False):
+    # type: (paramiko.transport.Transport, Union[PathTypes, Iterable[PathTypes]], AnyStr, bool, bool) -> None
     """
     Transfer files and directories to remote host.
 
@@ -603,13 +583,9 @@ def put(
         client.put(files, remote_path, recursive, preserve_times)
 
 
-def get(
-    transport: "paramiko.transport.Transport", 
-    remote_path: PathTypes, 
-    local_path: AnyStr = '',
-    recursive: bool = False, 
-    preserve_times: bool = False,
-):
+def get(transport, remote_path, local_path='',
+        recursive=False, preserve_times=False):
+    # type: (paramiko.transport.Transport, PathTypes, AnyStr, bool, bool) -> None
     """
     Transfer files and directories from remote host to localhost.
 
