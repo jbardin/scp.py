@@ -12,6 +12,7 @@ import os
 import re
 from socket import timeout as SocketTimeout
 
+
 # this is quote from the shlex module, added in py3.3
 _find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
 
