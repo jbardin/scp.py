@@ -13,9 +13,6 @@ import re
 from socket import timeout as SocketTimeout
 
 
-# this is quote from the shlex module, added in py3.3
-_find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
-
 SCP_COMMAND = b'scp'
 
 PATH_TYPES = (str, bytes)
@@ -42,6 +39,9 @@ try:
 except ImportError:
     pass
 
+
+# this is quote from the shlex module, added in py3.3
+_find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
 
 def _sh_quote(s):
     """Return a shell-escaped version of the string `s`."""
