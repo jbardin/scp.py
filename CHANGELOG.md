@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.3 (2022-02-15)
+
+- Add type hints
+
 ## 0.14.2 (2021-12-15)
 
 - Don't fail if the remote path is a PurePath not a Path
