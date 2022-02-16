@@ -36,8 +36,11 @@ try:
     if TYPE_CHECKING:
         import paramiko.transport
 
-    # unconditionally adding pathlib here because typing only works in python3 anyways and it's in stdlib
-    PathTypes = Union[str, bytes, "pathlib.PurePath"]
+    # this is some magic to make sure pyright doesn't get too confused with pathlib potentially being a nullable variable
+    import pathlib
+    PurePath = pathlib.PurePath
+
+    PathTypes = Union[str, bytes, PurePath]
 except ImportError:
     pass
 
