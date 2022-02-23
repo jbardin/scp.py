@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.14.4 (2022-02-23)
+
+- Update type hints for pyright
+
 ## 0.14.3 (2022-02-15)
 
 - Add type hints
