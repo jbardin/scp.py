@@ -131,7 +131,8 @@ class SCPClient(object):
         @param progress4: callback - called with (filename, size, sent, peername)
             during transfers. peername is a tuple contains (IP, PORT)
         @param sanitize: function - called with filename, should return
-            safe or escaped string.  Uses _sh_quote by default.
+            safe or escaped string. Uses _sh_quote by default. Set to ``False``
+            to disable.
         @type progress: function(string, int, int, tuple)
         """
         self.transport = transport
@@ -151,7 +152,10 @@ class SCPClient(object):
         self._depth = 0
         self._rename = False
         self._utime = None
-        self.sanitize = sanitize
+        if sanitize is False:
+            self.sanitize = lambda x: x
+        else:
+            self.sanitize = sanitize
         self._dirtimes = {}
         self.peername = self.transport.getpeername()
         self.scp_command = SCP_COMMAND
