@@ -236,9 +236,9 @@ class SCPClient(object):
         """
         Transfer files and directories from remote host to localhost.
 
-        @param remote_path: path to retrieve from remote host. since this is
-            evaluated by scp on the remote host, shell wildcards and
-            environment variables may be used.
+        @param remote_path: path to retrieve from remote host. Note that
+            wildcards will be escaped unless you changed the `sanitize`
+            function.
         @type remote_path: str
         @param local_path: path in which to receive files locally
         @type local_path: str
@@ -598,9 +598,8 @@ def get(transport, remote_path, local_path='',
 
     @param transport: an paramiko L{Transport}
     @type transport: L{Transport}
-    @param remote_path: path to retrieve from remote host. since this is
-        evaluated by scp on the remote host, shell wildcards and environment
-        variables may be used.
+    @param remote_path: path to retrieve from remote host. Note that wildcards
+        will be escaped unless you changed the `sanitize` function.
     @type remote_path: str
     @param local_path: path in which to receive files locally
     @type local_path: str
