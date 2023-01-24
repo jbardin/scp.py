@@ -31,7 +31,7 @@ except NameError:
     pass
 
 try:
-    from typing import IO, TYPE_CHECKING, AnyStr, Callable, Iterable, Optional, Tuple, Union, Dict
+    from typing import IO, TYPE_CHECKING, AnyStr, Callable, Iterable, Optional, Tuple, Union
 
     if TYPE_CHECKING:
         import paramiko.transport
