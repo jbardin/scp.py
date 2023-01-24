@@ -131,6 +131,22 @@ class TestDownload(unittest.TestCase):
             os.chdir(previous)
             shutil.rmtree(temp)
 
+    def download_test_fo(self, filename, result=b''):
+        cb3 = lambda filename, size, sent: None
+        with SCPClient(self.ssh.get_transport(), progress=cb3) as scp:
+            bytes_io = scp.getfo(filename)
+        value = bytes_io.getvalue()
+
+        self.assertEqual(value, result)
+
+    def download_test_data(self, filename, decode_utf8=False, result=b''):
+        cb3 = lambda filename, size, sent: None
+        with SCPClient(self.ssh.get_transport(), progress=cb3) as scp:
+            value = scp.get_data(filename, decode_utf8=decode_utf8)
+        if not decode_utf8:
+            self.assertEqual(value, result)
+        self.assertEqual(value, result.decode('utf-8'))
+
     def test_get_bytes(self):
         self.download_test(b'/tmp/r\xC3\xA9mi', False, b'target',
                            [u'target'], [b'target'])
@@ -166,6 +182,11 @@ class TestDownload(unittest.TestCase):
                             u'target\\b\xE8te'],
                            [b'target', b'target/file',
                             b'target/b\xC3\xA8te'])
+
+    def test_get_fo(self):
+        self.download_test_fo(b'/tmp/r\xC3\xA9mi', result=b'')
+        self.download_test_data(b'/tmp/r\xC3\xA9mi', decode_utf8=False, result=b'')
+        self.download_test_data(b'/tmp/r\xC3\xA9mi', decode_utf8=True, result=b'')
 
     def test_get_invalid_unicode(self):
         self.download_test(b'/tmp/p\xE9t\xE9', False, u'target',

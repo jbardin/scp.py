@@ -11,6 +11,8 @@ import locale
 import os
 import re
 from socket import timeout as SocketTimeout
+import ntpath
+from io import BytesIO
 
 
 SCP_COMMAND = b'scp'
@@ -29,7 +31,7 @@ except NameError:
     pass
 
 try:
-    from typing import IO, TYPE_CHECKING, AnyStr, Callable, Iterable, Optional, Tuple, Union
+    from typing import IO, TYPE_CHECKING, AnyStr, Callable, Iterable, Optional, Tuple, Union, Dict
 
     if TYPE_CHECKING:
         import paramiko.transport
@@ -159,6 +161,7 @@ class SCPClient(object):
         self._dirtimes = {}
         self.peername = self.transport.getpeername()
         self.scp_command = SCP_COMMAND
+        self.remote_file_name = None
 
     def __enter__(self):
         self.channel = self._open()
@@ -280,6 +283,45 @@ class SCPClient(object):
                                   b' '.join(remote_path))
         self._recv_all()
         self.close()
+
+    def getfo(self, remote_path):
+        # type: (PathTypes) -> BytesIO
+        """
+        Transfer a file from remote host to localhost to a file-like object.
+
+        @param remote_path: path to retrieve from remote host. Note that
+            wildcards will be escaped unless you changed the `sanitize`
+            function.
+        @type remote_path: str
+        @returns: file-like object with the file's data
+        """
+        remote_path = self.sanitize(asbytes(remote_path))
+        self.channel = self._open()
+        self.remote_file_name = ntpath.basename(asunicode_win(remote_path))
+        self.channel.settimeout(self.socket_timeout)
+        self.channel.exec_command(self.scp_command + b" -f " + remote_path)
+        bytes_io = BytesIO()
+        self._recv_all_fo(bytes_io)
+        self.close()
+        return bytes_io
+
+    def get_data(self, remote_path, decode_utf8=False):
+        # type: (PathTypes, bool) -> Union[bytes, str]
+        """
+        Transfer a file from remote host to localhost, return the data of the remote file.
+
+        @param remote_path: path to retrieve from remote host. Note that
+            wildcards will be escaped unless you changed the `sanitize`
+            function.
+        @type remote_path: str
+        @param decode_utf8: should decode result as utf-8
+        @type decode_utf8: bool
+        @returns: data with the remote file's data
+        """
+        data = self.getfo(remote_path).getvalue()
+        if decode_utf8:
+            return data.decode("utf-8")
+        return data
 
     def _open(self):
         """open a scp channel"""
@@ -552,6 +594,64 @@ class SCPClient(object):
         if self._depth > 0:
             self._depth -= 1
             self._recv_dir = os.path.split(self._recv_dir)[0]
+
+    def _recv_all_fo(self, fh):
+        # type: (BytesIO) -> None
+        # loop over scp commands, and receive as necessary
+        commands = (b'C', )
+        while not self.channel.closed:
+            # wait for command as long as we're open
+            self.channel.sendall('\x00')
+            msg = self.channel.recv(1024)
+            if not msg:  # chan closed while receiving
+                break
+            assert msg[-1:] == b'\n'
+            msg = msg[:-1]
+            code = msg[0:1]
+            if code not in commands:
+                raise SCPException(asunicode(msg[1:]))
+            self._recv_file_fo(msg[1:], fh)
+
+    def _recv_file_fo(self, cmd, fh):
+        # type: (bytes, BytesIO) -> None
+        chan = self.channel
+        parts = cmd.strip().split(b' ', 2)
+
+        try:
+            mode = int(parts[0], 8)
+            size = int(parts[1])
+        except:
+            chan.send('\x01')
+            chan.close()
+            raise SCPException('Bad file format')
+
+        if self._progress:
+            if size == 0:
+                # avoid divide-by-zero
+                self._progress(self.remote_file_name, 1, 1, self.peername)
+            else:
+                self._progress(self.remote_file_name, size, 0, self.peername)
+        buff_size = self.buff_size
+        pos = 0
+        chan.send(b'\x00')
+        try:
+            while pos < size:
+                # we have to make sure we don't read the final byte
+                if size - pos <= buff_size:
+                    buff_size = size - pos
+                data = chan.recv(buff_size)
+                if not data:
+                    raise SCPException("Underlying channel was closed")
+                fh.write(data)
+                pos = fh.tell()
+                if self._progress:
+                    self._progress(self.remote_file_name, size, pos, self.peername)
+            msg = chan.recv(512)
+            if msg and msg[0:1] != b'\x00':
+                raise SCPException(asunicode(msg[1:]))
+        except SocketTimeout:
+            chan.close()
+            raise SCPException('Error receiving, socket.timeout')
 
     def _set_dirtimes(self):
         try:

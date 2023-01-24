@@ -91,6 +91,34 @@ The ``putfo`` method can be used to upload file-like objects:
     fl.close()
 
 
+Downloading to file-like objects or buffers
+---------------------------
+
+The ``getfo`` method can be used to download a single file into a BytesIO (file-like) stream.
+Likewise, the ``get_data`` method can be used to download a single file's data and get it as a bytes/str object.
+
+..  code-block:: python
+
+    import io
+    from paramiko import SSHClient
+    from scp import SCPClient
+
+    ssh = SSHClient()
+    ssh.load_system_host_keys()
+    ssh.connect('example.com')
+
+    # SCPCLient takes a paramiko transport as an argument
+    scp = SCPClient(ssh.get_transport())
+
+    # Download a file's data into a BytesIO object
+    fl = scp.getfo('/tmp/test.txt')
+    print(fl.getvalue())
+
+    # Or get the data directly
+    data = scp.get_data('/tmp/test.txt', decode_utf8=True)
+    print(data)
+
+
 Tracking progress of your file uploads/downloads
 ------------------------------------------------
 
