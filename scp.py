@@ -311,8 +311,10 @@ class SCPClient(object):
             if self.preserve_times:
                 self._send_time(mtime, atime)
             fl = open(name, 'rb')
-            self._send_file(fl, name, mode, size)
-            fl.close()
+            try:
+                self._send_file(fl, name, mode, size)
+            finally:
+                fl.close()
 
     def _send_file(self, fl, name, mode, size):
         basename = asbytes(os.path.basename(name))
@@ -500,16 +502,15 @@ class SCPClient(object):
             msg = chan.recv(512)
             if msg and msg[0:1] != b'\x00':
                 raise SCPException(asunicode(msg[1:]))
-        except SocketTimeout:
-            chan.close()
-            raise SCPException('Error receiving, socket.timeout')
 
-        file_hdl.truncate()
-        try:
+            file_hdl.truncate()
             os.utime(path, self._utime)
             self._utime = None
             os.chmod(path, mode)
             # should we notify the other end?
+        except SocketTimeout:
+            chan.close()
+            raise SCPException('Error receiving, socket.timeout')
         finally:
             file_hdl.close()
         # '\x00' confirmation sent in _recv_all
