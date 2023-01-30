@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.14.5 (2023-01-30)
+
+- Update docstrings to clarify sanitation and use of wildcards
+- Make sure to close the local file on errors
+
 ## 0.14.4 (2022-02-23)
 
 - Update type hints for pyright
