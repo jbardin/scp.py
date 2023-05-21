@@ -284,8 +284,8 @@ class SCPClient(object):
         self._recv_all()
         self.close()
 
-    def getfo(self, remote_path):
-        # type: (PathTypes) -> BytesIO
+    def getfo(self, remote_path, bytes_io=None):
+        # type: (PathTypes, Optional[BytesIO]) -> BytesIO
         """
         Transfer a file from remote host to localhost to a file-like object.
 
@@ -293,6 +293,8 @@ class SCPClient(object):
             wildcards will be escaped unless you changed the `sanitize`
             function.
         @type remote_path: str
+        @param bytes_io: Optional - a BytesIO object to write into, instead of creating one and writing into it.
+        @type bytes_io: BytesIO
         @returns: file-like object with the file's data
         """
         remote_path = self.sanitize(asbytes(remote_path))
@@ -300,13 +302,14 @@ class SCPClient(object):
         self.remote_file_name = ntpath.basename(asunicode_win(remote_path))
         self.channel.settimeout(self.socket_timeout)
         self.channel.exec_command(self.scp_command + b" -f " + remote_path)
-        bytes_io = BytesIO()
+        if bytes_io is None:
+            bytes_io = BytesIO()
         self._recv_all_fo(bytes_io)
         self.close()
         return bytes_io
 
-    def get_data(self, remote_path, decode_utf8=False):
-        # type: (PathTypes, bool) -> Union[bytes, str]
+    def get_data(self, remote_path, decode_utf8=False, bytes_io=None):
+        # type: (PathTypes, bool, Optional[BytesIO]) -> Union[bytes, str]
         """
         Transfer a file from remote host to localhost, return the data of the remote file.
 
@@ -316,9 +319,11 @@ class SCPClient(object):
         @type remote_path: str
         @param decode_utf8: should decode result as utf-8
         @type decode_utf8: bool
+        @param bytes_io: Optional - a BytesIO object to write into, instead of creating one and writing into it.
+        @type bytes_io: BytesIO
         @returns: data with the remote file's data
         """
-        data = self.getfo(remote_path).getvalue()
+        data = self.getfo(remote_path, bytes_io=bytes_io).getvalue()
         if decode_utf8:
             return data.decode("utf-8")
         return data
