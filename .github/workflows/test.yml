@@ -23,12 +23,12 @@ jobs:
       with:
         python-version: ${{ matrix.python-version }}
     - run: pip install readme_renderer
-    - name: Set up SSH
-      run: .ci/setup_ssh.sh
     - name: Install SSH
       run: |
         sudo apt-get update -qq
         sudo apt-get install -qq openssh-client openssh-server
+    - name: Set up SSH
+      run: .ci/setup_ssh.sh
     - run: pip install -e .
     - run: SCPPY_PORT=10022 python test.py
     - run: python setup.py check -r -s
