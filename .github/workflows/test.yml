@@ -33,3 +33,21 @@ jobs:
     - run: SCPPY_PORT=10022 python test.py
     - run: python setup.py check -r -s
 
+  build-container:
+    strategy:
+      matrix:
+        python-version:
+          - "2.7"
+    runs-on: ubuntu-latest
+    container:
+      image: python:${{ matrix.python-version }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: Install SSH
+      run: |
+        apt-get update -qq
+        apt-get install -qq openssh-client openssh-server
+    - name: Set up SSH
+      run: .ci/setup_ssh.sh
+    - run: pip install -e .
+    - run: SCPPY_PORT=10022 python test.py
