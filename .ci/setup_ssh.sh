@@ -54,6 +54,14 @@ mkdir ~/.ssh || true
 cp client/id_rsa ~/.ssh/id_rsa
 umask 022
 rm -f ~/.ssh/known_hosts
+
+# If GitHub Actions: link from real HOME to GitHub HOME
+REAL_HOME="$(getent passwd "$(id -u)" | cut -d: -f6)"
+if [ "$REAL_HOME" != "$HOME" ]; then
+    printf 'Linking %s to %s\n' "$REAL_HOME/.ssh" "$HOME/.ssh" >&2
+    ln -s $HOME/.ssh $REAL_HOME/.ssh
+fi
+
 # ssh-keyscan is bugged, don't use it
 # ssh-keyscan -v -p 10022 -t rsa 127.0.0.1 >> ~/.ssh/known_hosts
 ssh -o StrictHostKeyChecking=no \
