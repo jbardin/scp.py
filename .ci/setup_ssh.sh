@@ -19,7 +19,7 @@ UsePrivilegeSeparation no
 
 # Authentication
 LoginGraceTime 10
-PermitRootLogin no
+PermitRootLogin yes
 StrictModes no
 UsePAM no
 
