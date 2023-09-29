@@ -235,8 +235,8 @@ class SCPClient(object):
         self.close()
 
     def get(self, remote_path, local_path='',
-            recursive=False, preserve_times=False):
-        # type: (PathTypes, Union[str, bytes], bool, bool) -> None
+            recursive=False, preserve_times=False, strict_file_names=False):
+        # type: (PathTypes, Union[str, bytes], bool, bool, bool) -> None
         """
         Transfer files and directories from remote host to localhost.
 
@@ -270,12 +270,14 @@ class SCPClient(object):
                                    asunicode(self._recv_dir))
         rcsv = (b'', b' -r')[recursive]
         prsv = (b'', b' -p')[preserve_times]
+        trsv = (b'', b' -T')[not strict_file_names]
         self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
         self.channel.exec_command(self.scp_command +
                                   rcsv +
                                   prsv +
+                                  trsv +
                                   b" -f " +
                                   b' '.join(remote_path))
         self._recv_all()
