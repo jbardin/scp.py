@@ -40,6 +40,11 @@ mkdir client || true
 ssh-keygen -f client/id_rsa -N '' -t rsa
 umask 022
 
+# Create "privilege separation directory"
+if ! [ -d /run/sshd ]; then
+    mkdir -p /run/sshd
+fi
+
 # Starts the server
 /usr/sbin/sshd -f config -h key_rsa -h key_dsa -p 10022
 
