@@ -11,6 +11,7 @@ import locale
 import os
 import re
 from socket import timeout as SocketTimeout
+import logging
 
 
 SCP_COMMAND = b'scp'
@@ -428,11 +429,18 @@ class SCPClient(object):
             msg = self.channel.recv(1024)
             if not msg:  # chan closed while receiving
                 break
-            assert msg[-1:] == b'\n'
-            msg = msg[:-1]
+            
+            if msg[-1:] == b'\n':
+                msg = msg[:-1]
             code = msg[0:1]
             if code not in command:
-                raise SCPException(asunicode(msg[1:]))
+                # When meeting with non-regular files under one folder, native
+                # scp command can 
+                # - Skip the non-regular files and prompt
+                # - Continue to download other regular files
+                self.channel._log(logging.ERROR, str(msg))
+                continue
+                # raise SCPException(asunicode(msg[1:]))
             command[code](msg[1:])
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
