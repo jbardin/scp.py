@@ -115,7 +115,7 @@ class SCPClient(object):
     (matching scp behaviour), but we make no attempt at symlinked directories.
     """
     def __init__(self, transport, buff_size=16384, socket_timeout=10.0,
-                 progress=None, progress4=None, sanitize=_sh_quote):
+                 progress=None, progress4=None, sanitize=_sh_quote, limit_bw=None):
         # type: (paramiko.transport.Transport, int, float, Optional[Callable[[bytes, int, int], None]], Optional[Callable[[bytes, int, int, Tuple[str, int]], None]], Callable[[bytes], bytes]) -> None
         """
         Create an scp1 client.
@@ -134,6 +134,9 @@ class SCPClient(object):
             safe or escaped string. Uses _sh_quote by default. Set to ``False``
             to disable.
         @type progress: function(string, int, int, tuple)
+        @limit_bw: limits the bandwidth used on the connection in Kbps. Must be integer positive.
+            the default value None does not limit the bandwidth.
+        @type limit_bw: Optional[int]
         """
         self.transport = transport
         self.buff_size = buff_size
@@ -159,6 +162,8 @@ class SCPClient(object):
         self._dirtimes = {}
         self.peername = self.transport.getpeername()
         self.scp_command = SCP_COMMAND
+        if limit_bw:
+            self.scp_command += b' -l %d' % limit_bw
 
     def __enter__(self):
         self.channel = self._open()
