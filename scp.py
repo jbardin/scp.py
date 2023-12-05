@@ -12,8 +12,8 @@ import os
 import re
 from socket import timeout as SocketTimeout
 
-
 SCP_COMMAND = b'scp'
+LIMIT_BW = b' -l %d'
 
 PATH_TYPES = (str, bytes)
 
@@ -36,15 +36,16 @@ try:
 
     # this is some magic to make sure pyright doesn't get too confused with pathlib potentially being a nullable variable
     import pathlib
+
     PurePath = pathlib.PurePath
 
     PathTypes = Union[str, bytes, PurePath]
 except ImportError:
     pass
 
-
 # this is quote from the shlex module, added in py3.3
 _find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
+
 
 def _sh_quote(s):
     """Return a shell-escaped version of the string `s`."""
@@ -114,8 +115,9 @@ class SCPClient(object):
     Since scp doesn't support symlinks, we send file symlinks as the file
     (matching scp behaviour), but we make no attempt at symlinked directories.
     """
+
     def __init__(self, transport, buff_size=16384, socket_timeout=10.0,
-                 progress=None, progress4=None, sanitize=_sh_quote):
+                 progress=None, progress4=None, sanitize=_sh_quote, limit_bw: int = False):
         # type: (paramiko.transport.Transport, int, float, Optional[Callable[[bytes, int, int], None]], Optional[Callable[[bytes, int, int, Tuple[str, int]], None]], Callable[[bytes], bytes]) -> None
         """
         Create an scp1 client.
@@ -134,6 +136,8 @@ class SCPClient(object):
             safe or escaped string. Uses _sh_quote by default. Set to ``False``
             to disable.
         @type progress: function(string, int, int, tuple)
+        @limit_bw: limits the bandwidth used on the connection in Kbps. Must be integer positive.
+            the default value None does not limit the bandwidth.
         """
         self.transport = transport
         self.buff_size = buff_size
@@ -159,6 +163,8 @@ class SCPClient(object):
         self._dirtimes = {}
         self.peername = self.transport.getpeername()
         self.scp_command = SCP_COMMAND
+        if limit_bw:
+            self.scp_command += LIMIT_BW % limit_bw
 
     def __enter__(self):
         self.channel = self._open()
