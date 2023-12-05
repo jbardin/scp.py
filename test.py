@@ -94,7 +94,7 @@ class TestDownload(unittest.TestCase):
               "Python 3" if PY3 else "Python 2"))
 
     def download_test(self, filename, recursive, destination=None,
-                      expected_win=[], expected_posix=[]):
+                      expected_win=[], expected_posix=[], limit_bw=None):
         # Make a temporary directory
         temp = tempfile.mkdtemp(prefix='scp-py_test_')
         # Add some unicode in the path
@@ -111,7 +111,11 @@ class TestDownload(unittest.TestCase):
         os.chdir(temp_in)
         cb3 = lambda filename, size, sent: None
         try:
-            with SCPClient(self.ssh.get_transport(), progress=cb3) as scp:
+            with SCPClient(
+                self.ssh.get_transport(),
+                progress=cb3,
+                limit_bw=limit_bw,
+            ) as scp:
                 scp.get(filename,
                         destination if destination is not None else u'.',
                         preserve_times=True, recursive=recursive)
@@ -135,7 +139,8 @@ class TestDownload(unittest.TestCase):
         self.download_test(b'/tmp/r\xC3\xA9mi', False, b'target',
                            [u'target'], [b'target'])
         self.download_test(b'/tmp/r\xC3\xA9mi', False, u'target',
-                           [u'target'], [b'target'])
+                           [u'target'], [b'target'],
+                           limit_bw=2)
         self.download_test(b'/tmp/r\xC3\xA9mi', False, None,
                            [u'r\xE9mi'], [b'r\xC3\xA9mi'])
         self.download_test([b'/tmp/bien rang\xC3\xA9/file',
@@ -160,7 +165,8 @@ class TestDownload(unittest.TestCase):
                            [u'bien rang\xE9', u'bien rang\xE9\\file',
                             u'bien rang\xE9\\b\xE8te'],
                            [b'bien rang\xC3\xA9', b'bien rang\xC3\xA9/file',
-                            b'bien rang\xC3\xA9/b\xC3\xA8te'])
+                            b'bien rang\xC3\xA9/b\xC3\xA8te'],
+                           limit_bw=2)
         self.download_test(b'/tmp/bien rang\xC3\xA9', True, b'target',
                            [u'target', u'target\\file',
                             u'target\\b\xE8te'],
@@ -207,7 +213,7 @@ class TestUpload(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls._temp)
 
-    def upload_test(self, filenames, recursive, expected=[], fl=None):
+    def upload_test(self, filenames, recursive, expected=[], fl=None, limit_bw=None):
         destination = b'/tmp/upp\xC3\xA9' + next(unique_names)
         chan = self.ssh.get_transport().open_session()
         chan.exec_command(b'mkdir ' + destination)
@@ -216,7 +222,11 @@ class TestUpload(unittest.TestCase):
         cb4 = lambda filename, size, sent, peername: None
         try:
             os.chdir(self._temp)
-            with SCPClient(self.ssh.get_transport(), progress4=cb4) as scp:
+            with SCPClient(
+                self.ssh.get_transport(),
+                progress4=cb4,
+                limit_bw=limit_bw,
+            ) as scp:
                 if not fl:
                     scp.put(filenames, destination, recursive)
                 else:
@@ -252,7 +262,8 @@ class TestUpload(unittest.TestCase):
         self.upload_test(b'cl\xC3\xA9/r\xC3\xA9mi', False, [b'r\xC3\xA9mi'])
         self.upload_test(b'cl\xC3\xA9/dossi\xC3\xA9/bien rang\xC3\xA9/test',
                          False,
-                         [b'test'])
+                         [b'test'],
+                         limit_bw=2)
         self.upload_test(b'cl\xC3\xA9/dossi\xC3\xA9', True,
                          [b'dossi\xC3\xA9',
                           b'dossi\xC3\xA9/bien rang\xC3\xA9',
