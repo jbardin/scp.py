@@ -115,7 +115,7 @@ class SCPClient(object):
     (matching scp behaviour), but we make no attempt at symlinked directories.
     """
     def __init__(self, transport, buff_size=16384, socket_timeout=10.0,
-                 progress=None, progress4=None, sanitize=_sh_quote, limit_bw=False):
+                 progress=None, progress4=None, sanitize=_sh_quote, limit_bw=None):
         # type: (paramiko.transport.Transport, int, float, Optional[Callable[[bytes, int, int], None]], Optional[Callable[[bytes, int, int, Tuple[str, int]], None]], Callable[[bytes], bytes]) -> None
         """
         Create an scp1 client.
