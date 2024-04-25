@@ -10,6 +10,7 @@ __version__ = '0.14.5'
 import locale
 import os
 import re
+import time
 from socket import timeout as SocketTimeout
 
 
@@ -163,7 +164,9 @@ class SCPClient(object):
         self.peername = self.transport.getpeername()
         self.scp_command = SCP_COMMAND
         if limit_bw:
-            self.scp_command += b' -l %d' % limit_bw
+            self.limit_bw = limit_bw * 128 #limit_bw in kbit/s.  Change to bytes/s
+        else:
+            self.limit_bw = None
 
     def __enter__(self):
         self.channel = self._open()
@@ -339,8 +342,22 @@ class SCPClient(object):
         buff_size = self.buff_size
         chan = self.channel
         while file_pos < size:
+            # store the previous file position for later comparison
+            prev_file_pos = file_pos
+            # record the time just before data is sent
+            start = time.perf_counter()
             chan.sendall(fl.read(buff_size))
             file_pos = fl.tell()
+            # Only check the timing if a limit was specified
+            if self.limit_bw:   
+                # elapsed time of last write
+                elapsed_time = time.perf_counter() - start
+                # time in seconds last write should have taken with limit
+                limit_time = float(file_pos-prev_file_pos) / float(self.limit_bw)
+                # if elapsed time is less then actual write time, sleep the
+                # remaining time to stay under the bandwidth limit
+                if elapsed_time < limit_time:
+                    time.sleep(limit_time-elapsed_time)
             if self._progress:
                 self._progress(basename, size, file_pos, self.peername)
         chan.sendall('\x00')
