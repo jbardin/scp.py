@@ -163,10 +163,10 @@ class SCPClient(object):
         self._dirtimes = {}
         self.peername = self.transport.getpeername()
         self.scp_command = SCP_COMMAND
+        self.limit = None
         if limit_bw:
-            self.limit_bw = limit_bw * 128 #limit_bw in kbit/s.  Change to bytes/s
-        else:
-            self.limit_bw = None
+            #limit_bw in kbit/s.  Change to bytes/s
+            self.limit = limit_bw * 128
 
     def __enter__(self):
         self.channel = self._open()
@@ -205,9 +205,9 @@ class SCPClient(object):
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
                 
-        local_limit = None
+        limit = None
         if limit_bw:
-            local_limit = limit_bw * 128
+            limit = limit_bw * 128
 
         if isinstance(files, PATH_TYPES):
             files = [files]
@@ -215,9 +215,9 @@ class SCPClient(object):
             files = list(files)
 
         if recursive:
-            self._send_recursive(files)
+            self._send_recursive(files, limit=limit)
         else:
-            self._send_files(files, limit_bw=local_limit)
+            self._send_files(files, limit=limit)
 
         self.close()
 
@@ -244,16 +244,16 @@ class SCPClient(object):
             size = fl.tell() - pos
             fl.seek(pos, os.SEEK_SET)  # Seek back
 
-        local_limit = None
+        limit = None
         if limit_bw:
-            local_limit = limit_bw * 128
+            limit = limit_bw * 128
 
         self.channel = self._open()
         self.channel.settimeout(self.socket_timeout)
         self.channel.exec_command(self.scp_command + b' -t ' +
                                   self.sanitize(asbytes(remote_path)))
         self._recv_confirm()
-        self._send_file(fl, remote_path, mode, size=size, limit_bw=local_limit)
+        self._send_file(fl, remote_path, mode, size=size, limit=limit)
         self.close()
 
     def get(self, remote_path, local_path='',
@@ -277,9 +277,9 @@ class SCPClient(object):
         @param limit_bw: bandwidth limit for this operation, in kbits/s
         @type limit_bw: int
         """
-        local_limit = None
+        limit = None
         if limit_bw:
-            local_limit = limit_bw * 128
+            limit = limit_bw * 128
             
         if isinstance(remote_path, PATH_TYPES):
             remote_path = [remote_path]
@@ -307,7 +307,7 @@ class SCPClient(object):
                                   prsv +
                                   b" -f " +
                                   b' '.join(remote_path))
-        self._recv_all(limit_bw=local_limit)
+        self._recv_all(limit=limit)
         self.close()
 
     def _open(self):
@@ -334,22 +334,20 @@ class SCPClient(object):
         mtime = int(stats.st_mtime)
         return (mode, size, mtime, atime)
 
-    def _send_files(self, files, limit_bw=None):
+    def _send_files(self, files, limit=None):
         for name in files:
             (mode, size, mtime, atime) = self._read_stats(name)
             if self.preserve_times:
                 self._send_time(mtime, atime)
             fl = open(name, 'rb')
             try:
-                self._send_file(fl, name, mode, size, limit_bw)
+                self._send_file(fl, name, mode, size, limit)
             finally:
                 fl.close()
 
-    def _send_file(self, fl, name, mode, size, limit_bw=None):
-        if limit_bw:
-            local_limit = limit_bw
-        else:
-            local_limit = self.limit_bw
+    def _send_file(self, fl, name, mode, size, limit=None):
+        if limit is None:
+            limit = self.limit
         basename = asbytes(os.path.basename(name))
         # The protocol can't handle \n in the filename.
         # Quote them as the control sequence \^J for now,
@@ -374,11 +372,11 @@ class SCPClient(object):
             chan.sendall(fl.read(buff_size))
             file_pos = fl.tell()
             # Only check the timing if a limit was specified
-            if local_limit:   
+            if limit:   
                 # elapsed time of last write
                 elapsed_time = time.perf_counter() - start
                 # time in seconds last write should have taken with limit
-                limit_time = float(file_pos-prev_file_pos) / float(local_limit)
+                limit_time = float(file_pos-prev_file_pos) / float(limit)
                 # if elapsed time is less then actual write time, sleep the
                 # remaining time to stay under the bandwidth limit
                 if elapsed_time < limit_time:
@@ -407,12 +405,12 @@ class SCPClient(object):
         # now we're in our common base directory, so on
         self._send_pushd(to_dir)
 
-    def _send_recursive(self, files, limit_bw=None):
+    def _send_recursive(self, files, limit=None):
         for base in files:
             base = asbytes(base)
             if not os.path.isdir(base):
                 # filename mixed into the bunch
-                self._send_files([base], limit_bw=limit_bw)
+                self._send_files([base], limit=limit)
                 continue
             last_dir = asbytes(base)
             for root, dirs, fls in os.walk(base):
@@ -420,7 +418,7 @@ class SCPClient(object):
                     self._chdir(last_dir, asbytes(root))
                 self._send_files(
                     [os.path.join(root, f) for f in fls],
-                    limit_bw=limit_bw
+                    limit=limit
                 )
                 last_dir = asbytes(root)
             # back out of the directory
@@ -466,7 +464,7 @@ class SCPClient(object):
         else:
             raise SCPException('Invalid response from server', msg)
 
-    def _recv_all(self, limit_bw=None):
+    def _recv_all(self, limit=None):
         # loop over scp commands, and receive as necessary
         command = {b'C': self._recv_file,
                    b'T': self._set_time,
@@ -483,7 +481,7 @@ class SCPClient(object):
             code = msg[0:1]
             if code not in command:
                 raise SCPException(asunicode(msg[1:]))
-            command[code](msg[1:], limit_bw=limit_bw)
+            command[code](msg[1:], limit=limit)
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
 
@@ -498,14 +496,12 @@ class SCPClient(object):
         # save for later
         self._utime = (atime, mtime)
 
-    def _recv_file(self, cmd, limit_bw=None):
+    def _recv_file(self, cmd, limit=None):
         chan = self.channel
         parts = cmd.strip().split(b' ', 2)
         
-        if limit_bw:
-            local_limit = limit_bw
-        else:
-            local_limit = self.limit_bw
+        if limit is None:
+            limit = self.limit
 
         try:
             mode = int(parts[0], 8)
@@ -558,11 +554,11 @@ class SCPClient(object):
                 file_hdl.write(data)
                 pos = file_hdl.tell()
                 # Only check the timing if a limit was specified
-                if local_limit:
+                if limit:
                     # elapsed time of last write
                     elapsed_time = time.perf_counter() - start
                     # time in seconds last write should have taken with limit
-                    limit_time = float(pos-prev_file_pos) / float(local_limit)
+                    limit_time = float(pos-prev_file_pos) / float(limit)
                     # if elapsed time is less then actual write time, sleep the
                     # remaining time to stay under the bandwidth limit
                     if elapsed_time < limit_time:
