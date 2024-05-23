@@ -20,6 +20,7 @@ jobs:
     - uses: actions/setup-python@v4
       with:
         python-version: ${{ matrix.python-version }}
+    - run: pip install setuptools
     - run: pip install readme_renderer
     - name: Install SSH
       run: |
@@ -46,6 +47,7 @@ jobs:
       run: |
         apt-get update -qq
         apt-get install -qq openssh-client openssh-server
+    - run: pip install setuptools
     - name: Set up SSH
       run: .ci/setup_ssh.sh
     - run: pip install -e .
