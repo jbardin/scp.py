@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.15.0 (2024-05-23)
+
+- Add bandwidth control (`limit_bw`)
+
 ## 0.14.5 (2023-01-30)
 
 - Update docstrings to clarify sanitation and use of wildcards
