@@ -166,7 +166,7 @@ class SCPClient(object):
         self.limit = None
         if limit_bw:
             #limit_bw in kbit/s.  Change to bytes/s
-            self.limit = limit_bw * 128
+            self.limit = limit_bw * 125
 
     def __enter__(self):
         self.channel = self._open()
@@ -207,7 +207,7 @@ class SCPClient(object):
                 
         limit = None
         if limit_bw:
-            limit = limit_bw * 128
+            limit = limit_bw * 125
 
         if isinstance(files, PATH_TYPES):
             files = [files]
@@ -246,7 +246,7 @@ class SCPClient(object):
 
         limit = None
         if limit_bw:
-            limit = limit_bw * 128
+            limit = limit_bw * 125
 
         self.channel = self._open()
         self.channel.settimeout(self.socket_timeout)
@@ -279,7 +279,7 @@ class SCPClient(object):
         """
         limit = None
         if limit_bw:
-            limit = limit_bw * 128
+            limit = limit_bw * 125
             
         if isinstance(remote_path, PATH_TYPES):
             remote_path = [remote_path]
@@ -348,6 +348,7 @@ class SCPClient(object):
     def _send_file(self, fl, name, mode, size, limit=None):
         if limit is None:
             limit = self.limit
+            
         basename = asbytes(os.path.basename(name))
         # The protocol can't handle \n in the filename.
         # Quote them as the control sequence \^J for now,
@@ -372,15 +373,16 @@ class SCPClient(object):
             chan.sendall(fl.read(buff_size))
             file_pos = fl.tell()
             # Only check the timing if a limit was specified
-            if limit:   
-                # elapsed time of last write
-                elapsed_time = time.perf_counter() - start
+            if limit:
                 # time in seconds last write should have taken with limit
                 limit_time = float(file_pos-prev_file_pos) / float(limit)
-                # if elapsed time is less then actual write time, sleep the
-                # remaining time to stay under the bandwidth limit
-                if elapsed_time < limit_time:
-                    time.sleep(limit_time-elapsed_time)
+                # if elapsed time is less then actual write time, wait the
+                # remaining time to stay under the bandwidth limit.
+                # time.sleep is not accurate enough, so just loop until
+                # the time limit is reached
+                elapsed_time = time.perf_counter() - start
+                while elapsed_time < limit_time:
+                    elapsed_time = time.perf_counter() - start
             if self._progress:
                 self._progress(basename, size, file_pos, self.peername)
         chan.sendall('\x00')
@@ -555,14 +557,15 @@ class SCPClient(object):
                 pos = file_hdl.tell()
                 # Only check the timing if a limit was specified
                 if limit:
-                    # elapsed time of last write
-                    elapsed_time = time.perf_counter() - start
                     # time in seconds last write should have taken with limit
                     limit_time = float(pos-prev_file_pos) / float(limit)
                     # if elapsed time is less then actual write time, sleep the
                     # remaining time to stay under the bandwidth limit
-                    if elapsed_time < limit_time:
-                        time.sleep(limit_time-elapsed_time)
+                    # time.sleep is not accurate enough, so just loop until
+                    # the time limit is reached
+                    elapsed_time = time.perf_counter() - start
+                    while elapsed_time < limit_time:
+                        elapsed_time = time.perf_counter() - start
                 if self._progress:
                     self._progress(path, size, pos, self.peername)
             msg = chan.recv(512)
