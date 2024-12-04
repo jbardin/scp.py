@@ -1,6 +1,9 @@
 from __future__ import print_function
 
-import contextlib
+try:
+    import contextlib2 as contextlib
+except ImportError:
+    import contextlib
 from io import BytesIO
 import os
 import paramiko

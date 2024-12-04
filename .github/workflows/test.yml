@@ -48,6 +48,8 @@ jobs:
         apt-get update -qq
         apt-get install -qq openssh-client openssh-server
     - run: pip install setuptools
+    - run: pip install contextlib2
+      if: ${{ startsWith(matrix.python-version, '2.') }}
     - name: Set up SSH
       run: .ci/setup_ssh.sh
     - run: pip install -e .
