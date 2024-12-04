@@ -1,5 +1,6 @@
 from __future__ import print_function
 
+import contextlib
 from io import BytesIO
 import os
 import paramiko
@@ -94,7 +95,8 @@ class TestDownload(unittest.TestCase):
               "Python 3" if PY3 else "Python 2"))
 
     def download_test(self, filename, recursive, destination=None,
-                      expected_win=[], expected_posix=[], limit_bw=None):
+                      expected_win=[], expected_posix=[], limit_bw=None,
+                      scp=None):
         # Make a temporary directory
         temp = tempfile.mkdtemp(prefix='scp-py_test_')
         # Add some unicode in the path
@@ -111,11 +113,13 @@ class TestDownload(unittest.TestCase):
         os.chdir(temp_in)
         cb3 = lambda filename, size, sent: None
         try:
-            with SCPClient(
-                self.ssh.get_transport(),
-                progress=cb3,
-                limit_bw=limit_bw,
-            ) as scp:
+            with contextlib.ExitStack() as ctx:
+                if scp is None:
+                    scp = ctx.enter_context(SCPClient(
+                        self.ssh.get_transport(),
+                        progress=cb3,
+                        limit_bw=limit_bw,
+                    ))
                 scp.get(filename,
                         destination if destination is not None else u'.',
                         preserve_times=True, recursive=recursive)
@@ -147,6 +151,22 @@ class TestDownload(unittest.TestCase):
                             b'/tmp/bien rang\xC3\xA9/b\xC3\xA8te'],
                            False, None,
                            [u'file', u'b\xE8te'], [b'file', b'b\xC3\xA8te'])
+
+    def test_get_bytes_multi(self):
+        with SCPClient(
+            self.ssh.get_transport(),
+        ) as scp:
+            self.download_test(b'/tmp/r\xC3\xA9mi', False, b'target',
+                               [u'target'], [b'target'], scp=scp)
+            self.download_test(b'/tmp/r\xC3\xA9mi', False, u'target',
+                               [u'target'], [b'target'],
+                               limit_bw=2, scp=scp)
+            self.download_test(b'/tmp/r\xC3\xA9mi', False, None,
+                               [u'r\xE9mi'], [b'r\xC3\xA9mi'], scp=scp)
+            self.download_test([b'/tmp/bien rang\xC3\xA9/file',
+                                b'/tmp/bien rang\xC3\xA9/b\xC3\xA8te'],
+                               False, None,
+                               [u'file', u'b\xE8te'], [b'file', b'b\xC3\xA8te'], scp=scp)
 
     def test_get_unicode(self):
         self.download_test(u'/tmp/r\xE9mi', False, b'target',
@@ -213,7 +233,8 @@ class TestUpload(unittest.TestCase):
     def tearDownClass(cls):
         shutil.rmtree(cls._temp)
 
-    def upload_test(self, filenames, recursive, expected=[], fl=None, limit_bw=None):
+    def upload_test(self, filenames, recursive, expected=[],
+                    fl=None, limit_bw=None, scp=None):
         destination = b'/tmp/upp\xC3\xA9' + next(unique_names)
         chan = self.ssh.get_transport().open_session()
         chan.exec_command(b'mkdir ' + destination)
@@ -222,11 +243,13 @@ class TestUpload(unittest.TestCase):
         cb4 = lambda filename, size, sent, peername: None
         try:
             os.chdir(self._temp)
-            with SCPClient(
-                self.ssh.get_transport(),
-                progress4=cb4,
-                limit_bw=limit_bw,
-            ) as scp:
+            with contextlib.ExitStack() as ctx:
+                if scp is None:
+                    scp = ctx.enter_context(SCPClient(
+                        self.ssh.get_transport(),
+                        progress4=cb4,
+                        limit_bw=limit_bw,
+                    ))
                 if not fl:
                     scp.put(filenames, destination, recursive)
                 else:
@@ -298,6 +321,35 @@ class TestUpload(unittest.TestCase):
                           b'dossi\xC3\xA9/bien rang\xC3\xA9',
                           b'dossi\xC3\xA9/bien rang\xC3\xA9/test',
                           b'r\xC3\xA9mi'])
+
+    def test_put_unicode_multi(self):
+        with SCPClient(
+            self.ssh.get_transport(),
+        ) as scp:
+            self.upload_test(u'cl\xE9/r\xE9mi', False, [b'r\xC3\xA9mi'], scp=scp)
+            self.upload_test(u'cl\xE9/dossi\xE9/bien rang\xE9/test', False,
+                             [b'test'], scp=scp)
+            self.upload_test(u'cl\xE9/dossi\xE9', True,
+                             [b'dossi\xC3\xA9',
+                              b'dossi\xC3\xA9/bien rang\xC3\xA9',
+                              b'dossi\xC3\xA9/bien rang\xC3\xA9/test'], scp=scp)
+            self.upload_test([u'cl\xE9/dossi\xE9/bien rang\xE9',
+                              u'cl\xE9/r\xE9mi'], True,
+                             [b'bien rang\xC3\xA9',
+                              b'bien rang\xC3\xA9/test',
+                              b'r\xC3\xA9mi'], scp=scp)
+            g = (n for n in (u'cl\xE9/dossi\xE9/bien rang\xE9', u'cl\xE9/r\xE9mi'))
+            assert isinstance(g, types.GeneratorType)
+            self.upload_test(g, True,
+                             [b'bien rang\xC3\xA9',
+                              b'bien rang\xC3\xA9/test',
+                              b'r\xC3\xA9mi'], scp=scp)
+            self.upload_test([u'cl\xE9/dossi\xE9',
+                              u'cl\xE9/r\xE9mi'], True,
+                             [b'dossi\xC3\xA9',
+                              b'dossi\xC3\xA9/bien rang\xC3\xA9',
+                              b'dossi\xC3\xA9/bien rang\xC3\xA9/test',
+                              b'r\xC3\xA9mi'], scp=scp)
 
     @unittest.skipUnless(pathlib, "pathlib not available")
     def test_pathlib(self):
