@@ -14,7 +14,6 @@ ListenAddress 127.0.0.1
 
 Protocol 2
 HostKey /tmp/ssh_server/key_rsa
-UsePrivilegeSeparation no
 
 # Authentication
 LoginGraceTime 10
@@ -22,7 +21,6 @@ PermitRootLogin yes
 StrictModes no
 UsePAM no
 
-RSAAuthentication yes
 PubkeyAuthentication yes
 AuthorizedKeysFile /tmp/ssh_server/client/id_rsa.pub
 
