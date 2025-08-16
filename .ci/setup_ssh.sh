@@ -14,7 +14,6 @@ ListenAddress 127.0.0.1
 
 Protocol 2
 HostKey /tmp/ssh_server/key_rsa
-HostKey /tmp/ssh_server/key_dsa
 UsePrivilegeSeparation no
 
 # Authentication
@@ -32,7 +31,6 @@ EOF
 
 # Server keys
 ssh-keygen -f key_rsa -N '' -t rsa
-ssh-keygen -f key_dsa -N '' -t dsa
 
 # Client keys
 umask 077
@@ -46,7 +44,7 @@ if ! [ -d /run/sshd ]; then
 fi
 
 # Starts the server
-/usr/sbin/sshd -f config -h key_rsa -h key_dsa -p 10022
+/usr/sbin/sshd -f config -h key_rsa -p 10022
 
 # Sets up the client
 umask 077
