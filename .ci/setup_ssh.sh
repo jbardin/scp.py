@@ -22,7 +22,6 @@ PermitRootLogin yes
 StrictModes no
 UsePAM no
 
-RSAAuthentication yes
 PubkeyAuthentication yes
 AuthorizedKeysFile /tmp/ssh_server/client/id_rsa.pub
 
