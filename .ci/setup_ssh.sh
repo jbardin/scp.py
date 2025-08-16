@@ -14,7 +14,6 @@ ListenAddress 127.0.0.1
 
 Protocol 2
 HostKey /tmp/ssh_server/key_rsa
-UsePrivilegeSeparation no
 
 # Authentication
 LoginGraceTime 10
