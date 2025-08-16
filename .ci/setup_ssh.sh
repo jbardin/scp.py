@@ -57,6 +57,7 @@ rm -f ~/.ssh/known_hosts
 REAL_HOME="$(getent passwd "$(id -u)" | cut -d: -f6)"
 if [ "$REAL_HOME" != "$HOME" ]; then
     printf 'Linking %s to %s\n' "$REAL_HOME/.ssh" "$HOME/.ssh" >&2
+    rm -Rf $REAL_HOME/.ssh
     ln -s $HOME/.ssh $REAL_HOME/.ssh
 fi
 
