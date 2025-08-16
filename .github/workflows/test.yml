@@ -19,10 +19,22 @@ jobs:
     container:
       image: python:${{ matrix.python-version }}
     steps:
+    - name: Update APT repositories
+      run: |
+        if [ $PYTHON_VERSION = 2.7 ] || [ $PYTHON_VERSION = 3.5 ]; then
+          # Disable 'deb.debian.org' and 'security.debian.org' sources
+          # Enable 'snapshot.debian.org' sources
+          sed 's@^\(deb https\?://\(deb\.debian\.org\|security\.debian\.org\)/\)@# \1@; s@^# \(deb http://snapshot\.debian\.org\/\)@\1@' < /etc/apt/sources.list > /etc/apt/sources.list.new
+          mv /etc/apt/sources.list.new /etc/apt/sources.list
+          apt-get update -o Acquire::Check-Valid-Until=false
+        else
+          apt-get update
+        fi
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
     - uses: actions/checkout@v3
     - name: Install SSH
       run: |
-        apt-get update -qq
         apt-get install -qq openssh-client openssh-server
     - run: pip install setuptools
     - run: pip install contextlib2
