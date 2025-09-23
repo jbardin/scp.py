@@ -11,6 +11,7 @@ import locale
 import os
 import re
 from socket import timeout as SocketTimeout
+import logging
 
 
 SCP_COMMAND = b'scp'
@@ -143,6 +144,7 @@ class SCPClient(object):
         self.socket_timeout = socket_timeout
         self.channel = None
         self.preserve_times = False
+        self.recursive = False
         if progress is not None and progress4 is not None:
             raise TypeError("You may only set one of progress, progress4")
         elif progress4 is not None:
@@ -275,6 +277,7 @@ class SCPClient(object):
                                    asunicode(self._recv_dir))
         rcsv = (b'', b' -r')[recursive]
         prsv = (b'', b' -p')[preserve_times]
+        self.recursive = recursive
         self.channel = self._open()
         self._pushed = 0
         self.channel.settimeout(self.socket_timeout)
@@ -433,11 +436,20 @@ class SCPClient(object):
             msg = self.channel.recv(1024)
             if not msg:  # chan closed while receiving
                 break
-            assert msg[-1:] == b'\n'
-            msg = msg[:-1]
+                
+            if msg[-1:] == b'\n':
+                msg = msg[:-1]
+            else:
+                continue
+                
             code = msg[0:1]
             if code not in command:
-                raise SCPException(asunicode(msg[1:]))
+                if self.recursive:
+                    self.channel._log(logging.ERROR, str(msg))
+                    continue
+                else:
+                    raise SCPException(asunicode(msg[1:]))
+                    
             command[code](msg[1:])
         # directory times can't be set until we're done writing files
         self._set_dirtimes()
