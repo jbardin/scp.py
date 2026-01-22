@@ -43,19 +43,25 @@ except ImportError:
     pass
 
 
-# this is quote from the shlex module, added in py3.3
-_find_unsafe = re.compile(br'[^\w@%+=:,./~-]').search
+safe_shell_chars = set(b"ABCDEFGHIJKLMNOPQRSTUVWXYZ" +
+                       b"abcdefghijklmnopqrstuvwxyz" +
+                       b"0123456789" +
+                       b"-+=/:.,%_")
 
 def _sh_quote(s):
-    """Return a shell-escaped version of the string `s`."""
-    if not s:
-        return b""
-    if _find_unsafe(s) is None:
+    r"""Given bl"a, returns "bl\\"a".
+    """
+    if not s or any(c not in safe_shell_chars for c in s):
+        return (
+            b'"' +
+            s.replace(b'\\', b'\\\\')
+              .replace(b'"', b'\\"')
+              .replace(b'`', b'\\`')
+              .replace(b'$', b'\\$') +
+            b'"'
+        )
+    else:
         return s
-
-    # use single quotes, and put single quotes into double quotes
-    # the string $'b is then quoted as '$'"'"'b'
-    return b"'" + s.replace(b"'", b"'\"'\"'") + b"'"
 
 
 # Unicode conversion functions; assume UTF-8
