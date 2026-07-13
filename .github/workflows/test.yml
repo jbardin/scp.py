@@ -5,7 +5,7 @@ on:
   - pull_request
 
 jobs:
-  test:
+  test-openssh:
     strategy:
       matrix:
         python-version:
@@ -33,13 +33,66 @@ jobs:
       env:
         PYTHON_VERSION: ${{ matrix.python-version }}
     - uses: actions/checkout@v3
-    - name: Install SSH
+    - name: Install SSH client
       run: |
-        apt-get install -qq openssh-client openssh-server
+        apt-get install -qq openssh-client
+    - name: Install SSH server
+      run: |
+        apt-get install -qq openssh-server
     - run: pip install setuptools
     - run: pip install contextlib2
       if: ${{ startsWith(matrix.python-version, '2.') }}
     - name: Set up SSH
-      run: .ci/setup_ssh.sh
+      run: .ci/setup_openssh.sh
     - run: pip install -e .
     - run: SCPPY_PORT=10022 python test.py
+
+  test-dropbear:
+    strategy:
+      matrix:
+        python-version:
+          - "3.13"
+    runs-on: ubuntu-latest
+    container:
+      image: python:${{ matrix.python-version }}
+    services:
+      dropbear:
+        image: ubuntu:24.04
+        ports:
+          - 10022
+        command: sh -c "useradd user && mkdir /home/user && chown user:user /home/user && echo 'user:pass' | chpasswd && usermod -s /bin/bash user && apt-get update && apt-get install -qq dropbear-bin openssh-client && cd /root && cd /root && dropbearkey -t rsa -f id_rsa && dropbear -r id_rsa -F -E -p 10022"
+    steps:
+    - name: Update APT repositories
+      run: |
+        if [ $PYTHON_VERSION = 2.7 ] || [ $PYTHON_VERSION = 3.5 ]; then
+          # Disable 'deb.debian.org' and 'security.debian.org' sources
+          # Enable 'snapshot.debian.org' sources
+          sed 's@^\(deb https\?://\(deb\.debian\.org\|security\.debian\.org\)/\)@# \1@; s@^# \(deb http://snapshot\.debian\.org\/\)@\1@' < /etc/apt/sources.list > /etc/apt/sources.list.new
+          mv /etc/apt/sources.list.new /etc/apt/sources.list
+          apt-get update -o Acquire::Check-Valid-Until=false
+        else
+          apt-get update
+        fi
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
+    - uses: actions/checkout@v3
+    - name: Install SSH client
+      run: |
+        apt-get install -qq openssh-client
+    - run: pip install setuptools
+    - run: pip install contextlib2
+      if: ${{ startsWith(matrix.python-version, '2.') }}
+    - name: Wait for SSH server
+      run: |
+        apt-get install netcat-openbsd
+        WAITED=0
+        while ! nc -z dropbear 10022; do
+            if [ $WAITED -ge 120 ]; then
+                echo "dropbear didn't come up after $WAITED" >&2
+                exit 1
+            fi
+            sleep 3
+            WAITED=$((WAITED + 3))
+        done
+    - run: pip install -e .
+    - run: SCPPY_HOSTNAME=dropbear SCPPY_PORT=10022 SCPPY_USERNAME=user SCPPY_PASSWORD=pass python test.py
