@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.0 (2026-07-13)
+
+- Fix typing for `__init__()`
+- Wait for remote scp processs to exit before closing channel
+
 ## 0.15.0 (2024-05-23)
 
 - Add bandwidth control (`limit_bw`)
