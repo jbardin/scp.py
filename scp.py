@@ -296,6 +296,11 @@ class SCPClient(object):
     def close(self):
         """close scp channel"""
         if self.channel is not None:
+            try:
+                self.channel.shutdown_write()
+                self.channel.recv_exit_status()
+            except (EOFError, OSError, paramiko.SSHException):
+                pass
             self.channel.close()
             self.channel = None
 
