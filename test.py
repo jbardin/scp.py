@@ -25,6 +25,7 @@ ssh_info = {
     'hostname': os.environ.get('SCPPY_HOSTNAME', '127.0.0.1'),
     'port': int(os.environ.get('SCPPY_PORT', 22)),
     'username': os.environ.get('SCPPY_USERNAME', None),
+    'password': os.environ.get('SCPPY_PASSWORD', None),
 }
 
 
