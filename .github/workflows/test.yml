@@ -60,7 +60,7 @@ jobs:
         image: ubuntu:24.04
         ports:
           - 10022
-        command: sh -c "useradd user && mkdir /home/user && chown user:user /home/user && echo 'user:pass' | chpasswd && usermod -s /bin/bash user && apt-get update && apt-get install -qq dropbear-bin && cd /root && cd /root && dropbearkey -t rsa -f id_rsa && dropbear -r id_rsa -F -E -p 10022"
+        command: sh -c "useradd user && mkdir /home/user && chown user:user /home/user && echo 'user:pass' | chpasswd && usermod -s /bin/bash user && apt-get update && apt-get install -qq dropbear-bin openssh-client && cd /root && cd /root && dropbearkey -t rsa -f id_rsa && dropbear -r id_rsa -F -E -p 10022"
     steps:
     - name: Update APT repositories
       run: |
