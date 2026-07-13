@@ -391,14 +391,14 @@ class TestUpAndDown(unittest.TestCase):
         '''send and receive files with the same client'''
         previous = os.getcwd()
         testfile = os.path.join(self._temp, 'testfile')
-        testfile_sent = os.path.join(self._temp, 'testfile_sent')
+        remote = '/tmp/testfile-up-and-down'
         testfile_rcvd = os.path.join(self._temp, 'testfile_rcvd')
         try:
             os.chdir(self._temp)
             with open(testfile, 'w') as f:
                 f.write("TESTING\n")
-            put(self.ssh.get_transport(), testfile, testfile_sent)
-            get(self.ssh.get_transport(), testfile_sent, testfile_rcvd)
+            put(self.ssh.get_transport(), testfile, remote)
+            get(self.ssh.get_transport(), remote, testfile_rcvd)
 
             with open(testfile_rcvd) as f:
                 self.assertEqual(f.read(), 'TESTING\n')
