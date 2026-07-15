@@ -452,7 +452,7 @@ class SCPClient(object):
             times = cmd.split(b' ')
             mtime = int(times[0])
             atime = int(times[2]) or mtime
-        except:
+        except (ValueError, IndexError, AssertionError):
             self.channel.send(b'\x01')
             raise SCPException('Bad time format')
         # save for later
@@ -476,7 +476,7 @@ class SCPClient(object):
                 name = parts[2]
                 assert not os.path.isabs(name)
                 path = os.path.join(asbytes(self._recv_dir), name)
-        except:
+        except (ValueError, IndexError, AssertionError):
             chan.send('\x01')
             chan.close()
             raise SCPException('Bad file format')
@@ -542,7 +542,7 @@ class SCPClient(object):
                 assert not os.path.isabs(name)
                 path = os.path.join(asbytes(self._recv_dir), name)
                 self._depth += 1
-        except:
+        except (ValueError, IndexError, AssertionError):
             self.channel.send(b'\x01')
             raise SCPException('Bad directory format')
         try:
