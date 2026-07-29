@@ -9,6 +9,8 @@ __version__ = '0.16.0'
 
 import locale
 import os
+import paramiko
+import paramiko.transport
 import re
 from socket import timeout as SocketTimeout
 
@@ -29,10 +31,7 @@ except NameError:
     pass
 
 try:
-    from typing import IO, TYPE_CHECKING, AnyStr, Callable, Iterable, Optional, Tuple, Union
-
-    if TYPE_CHECKING:
-        import paramiko.transport
+    from typing import IO, AnyStr, Callable, Iterable, Optional, Tuple, Union
 
     # this is some magic to make sure pyright doesn't get too confused with pathlib potentially being a nullable variable
     import pathlib
