@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.16.1 (2026-07-29)
+
+- Fix missing import for `paramiko`, causing exception handling to fail in close()
+
 ## 0.16.0 (2026-07-13)
 
 - Fix typing for `__init__()`
