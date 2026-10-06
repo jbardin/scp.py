@@ -261,7 +261,7 @@ class SCPClient(object):
         else:
             remote_path = list(remote_path)
         remote_path = [self.sanitize(asbytes(r)) for r in remote_path]
-        self._recv_dir = local_path or os.getcwd()
+        self._recv_dir = os.path.realpath(local_path or os.getcwd())
         self._depth = 0
         self._rename = (len(remote_path) == 1 and
                         not os.path.isdir(os.path.abspath(local_path)))
@@ -471,10 +471,14 @@ class SCPClient(object):
                 name = parts[2].decode('utf-8')
                 assert not os.path.isabs(name)
                 path = os.path.join(asunicode_win(self._recv_dir), name)
+                if hasattr(os.path, 'commonpath'):
+                    assert os.path.commonpath([os.path.realpath(path), asunicode_win(self._recv_dir)]) == asunicode_win(self._recv_dir)
             else:
                 name = parts[2]
                 assert not os.path.isabs(name)
                 path = os.path.join(asbytes(self._recv_dir), name)
+                if hasattr(os.path, 'commonpath'):
+                    assert os.path.commonpath([os.path.realpath(path), asbytes(self._recv_dir)]) == asbytes(self._recv_dir)
         except (ValueError, IndexError, AssertionError):
             chan.send('\x01')
             chan.close()
@@ -553,7 +557,7 @@ class SCPClient(object):
                 raise SCPException('%s: Not a directory' % path)
             self._dirtimes[path] = (self._utime)
             self._utime = None
-            self._recv_dir = path
+            self._recv_dir = os.path.realpath(path)
         except (OSError, SCPException) as e:
             self.channel.send(b'\x01' + asbytes(str(e)))
             raise
