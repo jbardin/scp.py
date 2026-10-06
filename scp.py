@@ -298,9 +298,9 @@ class SCPClient(object):
             try:
                 self.channel.shutdown_write()
                 self.channel.recv_exit_status()
+                self.channel.close()
             except (EOFError, OSError, paramiko.SSHException):
                 pass
-            self.channel.close()
             self.channel = None
 
     def _read_stats(self, name):
