@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.16.2 (2026-10-06)
+
+- Catch `EOFError` from `channel.close()` that happens sporadically on some devices
+- Check erroneous server path on download
+
 ## 0.16.1 (2026-07-29)
 
 - Fix missing import for `paramiko`, causing exception handling to fail in close()
